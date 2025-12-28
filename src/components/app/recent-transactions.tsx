@@ -120,7 +120,7 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <>
@@ -171,7 +171,7 @@ export function RecentTransactions() {
                         <TableCell
                             className={cn(
                             'text-right font-semibold',
-                            t.type === 'income' ? 'text-green-600 dark:text-green-500' : ''
+                            t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
                             )}
                         >
                             {t.type === 'income' ? '+' : '-'}
