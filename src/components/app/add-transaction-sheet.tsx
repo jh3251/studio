@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const transactionFormSchema = z.object({
   userName: z.string().min(1, 'User name is required.'),
@@ -183,13 +184,13 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                         <FormControl>
                           <RadioGroupItem value="expense" />
                         </FormControl>
-                        <FormLabel className="font-normal">Cash Out</FormLabel>
+                        <FormLabel className="font-normal text-red-600 dark:text-red-500">Cash Out</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="income" />
                         </FormControl>
-                        <FormLabel className="font-normal">Cash In</FormLabel>
+                        <FormLabel className="font-normal text-green-600 dark:text-green-500">Cash In</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
