@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,7 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import type { Transaction } from '@/lib/types';
 
 const transactionFormSchema = z.object({
   userName: z.string().min(1, 'User name is required.'),
@@ -33,12 +34,14 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 interface AddTransactionSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  transactionToEdit?: Transaction | null;
 }
 
-export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionSheetProps) {
-  const { categories, users, addTransaction } = useAppContext();
+export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
+  const { categories, users, addTransaction, updateTransaction } = useAppContext();
   const { toast } = useToast();
-  const { user } = useUser();
+  
+  const isEditMode = !!transactionToEdit;
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -48,6 +51,25 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
       date: new Date(),
     },
   });
+
+  useEffect(() => {
+    if (isEditMode && transactionToEdit) {
+      form.reset({
+        ...transactionToEdit,
+        date: new Date(transactionToEdit.date),
+        categoryId: transactionToEdit.categoryId || undefined,
+      });
+    } else {
+      form.reset({
+        userName: '',
+        description: '',
+        amount: undefined,
+        type: 'expense',
+        date: new Date(),
+        categoryId: undefined,
+      });
+    }
+  }, [transactionToEdit, isEditMode, form, isOpen]);
   
   const transactionType = form.watch('type');
 
@@ -58,27 +80,35 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
     }
     
     try {
-      await addTransaction({
-        ...data,
-        categoryId: data.categoryId || '', // Ensure categoryId is not undefined
-        date: data.date.toISOString(),
-      });
-      toast({
-        title: 'Transaction added',
-        description: `Successfully added "${data.description}".`,
-      });
-      form.reset({
-        userName: '',
-        description: '',
-        type: 'expense',
-        date: new Date(),
-      });
+      if (isEditMode && transactionToEdit) {
+        await updateTransaction({
+          ...data,
+          id: transactionToEdit.id,
+          date: data.date.toISOString(),
+          categoryId: data.type === 'expense' ? data.categoryId || '' : '',
+        });
+        toast({
+          title: 'Transaction updated',
+          description: `Successfully updated "${data.description}".`,
+        });
+      } else {
+        await addTransaction({
+          ...data,
+          categoryId: data.type === 'expense' ? data.categoryId || '' : '',
+          date: data.date.toISOString(),
+        });
+        toast({
+          title: 'Transaction added',
+          description: `Successfully added "${data.description}".`,
+        });
+      }
+      
       onOpenChange(false);
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "Could not add transaction.",
+        description: isEditMode ? "Could not update transaction." : "Could not add transaction.",
       });
     }
   };
@@ -87,8 +117,8 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Add New Transaction</SheetTitle>
-          <SheetDescription>Fill in the details to track your income or expense.</SheetDescription>
+          <SheetTitle>{isEditMode ? 'Edit Transaction' : 'Add New Transaction'}</SheetTitle>
+          <SheetDescription>{isEditMode ? 'Update the details of your transaction.' : 'Fill in the details to track your income or expense.'}</SheetDescription>
         </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
@@ -98,7 +128,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>User</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a user" />
@@ -147,8 +177,9 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4"
+                      disabled={isEditMode}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
@@ -175,7 +206,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -229,7 +260,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
             <SheetFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Transaction
+                {isEditMode ? 'Save Changes' : 'Save Transaction'}
               </Button>
             </SheetFooter>
           </form>

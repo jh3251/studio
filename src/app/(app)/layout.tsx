@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/app/sidebar-nav';
@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { AddTransactionSheet } from '@/components/app/add-transaction-sheet';
-import { useState } from 'react';
 
 export default function AppLayout({
   children,
@@ -57,9 +56,9 @@ export default function AppLayout({
               <PlusCircle className="mr-2 h-4 w-4" />
               New Transaction
             </Button>
-            <AddTransactionSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <AddTransactionSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
       </SidebarInset>
     </SidebarProvider>
   );

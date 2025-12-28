@@ -10,13 +10,14 @@ interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
   users: User[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => void;
-  addCategory: (category: Omit<Category, 'id' | 'userId'>) => void;
-  updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId'>>) => void;
-  deleteCategory: (id: string) => void;
-  addUser: (user: Omit<User, 'id' | 'userId'>) => void;
-  updateUser: (user: Pick<User, 'id'> & Partial<Omit<User, 'id'|'userId'>>) => void;
-  deleteUser: (id: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
+  updateTransaction: (transaction: Omit<Transaction, 'userId'>) => Promise<void>;
+  addCategory: (category: Omit<Category, 'id' | 'userId'>) => Promise<void>;
+  updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId'>>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  addUser: (user: Omit<User, 'id' | 'userId'>) => Promise<void>;
+  updateUser: (user: Pick<User, 'id'> & Partial<Omit<User, 'id'|'userId'>>) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -32,51 +33,58 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
 
-  const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'userId'>) => {
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
     if (!authUser || !firestore) return;
     const { type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    addDoc(collection(firestore, `users/${authUser.uid}/${collectionName}`), { ...data, userId: authUser.uid });
+    await addDoc(collection(firestore, `users/${authUser.uid}/${collectionName}`), { ...data, userId: authUser.uid });
   }, [authUser, firestore]);
-  
-  const addCategory = useCallback((category: Omit<Category, 'id' | 'userId'>) => {
+
+  const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'>) => {
     if (!authUser || !firestore) return;
-    addDoc(collection(firestore, `users/${authUser.uid}/categories`), { ...category, userId: authUser.uid });
+    const { id, type, ...data } = transaction;
+    const collectionName = type === 'income' ? 'incomes' : 'expenses';
+    await updateDoc(doc(firestore, `users/${authUser.uid}/${collectionName}`, id), data);
   }, [authUser, firestore]);
   
-  const updateCategory = useCallback((updatedCategory: Pick<Category, 'id'> & Partial<Omit<Category, 'id'|'userId'>>) => {
+  const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId'>) => {
+    if (!authUser || !firestore) return;
+    await addDoc(collection(firestore, `users/${authUser.uid}/categories`), { ...category, userId: authUser.uid });
+  }, [authUser, firestore]);
+  
+  const updateCategory = useCallback(async (updatedCategory: Pick<Category, 'id'> & Partial<Omit<Category, 'id'|'userId'>>) => {
     if (!authUser || !firestore) return;
     const { id, ...data } = updatedCategory;
-    updateDoc(doc(firestore, `users/${authUser.uid}/categories`, id), data);
+    await updateDoc(doc(firestore, `users/${authUser.uid}/categories`, id), data);
   }, [authUser, firestore]);
   
-  const deleteCategory = useCallback((id: string) => {
+  const deleteCategory = useCallback(async (id: string) => {
     if (!authUser || !firestore) return;
-    deleteDoc(doc(firestore, `users/${authUser.uid}/categories`, id));
+    await deleteDoc(doc(firestore, `users/${authUser.uid}/categories`, id));
   }, [authUser, firestore]);
   
-  const addUser = useCallback((user: Omit<User, 'id' | 'userId'>) => {
+  const addUser = useCallback(async (user: Omit<User, 'id' | 'userId'>) => {
     if (!authUser || !firestore) return;
-    addDoc(collection(firestore, `users/${authUser.uid}/app_users`), { ...user, userId: authUser.uid });
+    await addDoc(collection(firestore, `users/${authUser.uid}/app_users`), { ...user, userId: authUser.uid });
   }, [authUser, firestore]);
   
-  const updateUser = useCallback((updatedUser: Pick<User, 'id'> & Partial<Omit<User, 'id'|'userId'>>) => {
+  const updateUser = useCallback(async (updatedUser: Pick<User, 'id'> & Partial<Omit<User, 'id'|'userId'>>) => {
     if (!authUser || !firestore) return;
     const { id, ...data } = updatedUser;
-    updateDoc(doc(firestore, `users/${authUser.uid}/app_users`, id), data);
+    await updateDoc(doc(firestore, `users/${authUser.uid}/app_users`, id), data);
   }, [authUser, firestore]);
   
-  const deleteUser = useCallback((id: string) => {
+  const deleteUser = useCallback(async (id: string) => {
     if (!authUser || !firestore) return;
-    deleteDoc(doc(firestore, `users/${authUser.uid}/app_users`, id));
+    await deleteDoc(doc(firestore, `users/${authUser.uid}/app_users`, id));
   }, [authUser, firestore]);
 
   useEffect(() => {
     if (authUser && firestore) {
       setLoading(true);
 
-      const unsubscribes: (() => void)[] = [];
       const dataSources = ['incomes', 'expenses', 'categories', 'app_users'];
+      const unsubscribes: (() => void)[] = [];
       let loadedSources = 0;
 
       const checkAllDataLoaded = () => {
@@ -86,51 +94,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
       };
 
-      const incomesUnsub = onSnapshot(
-        collection(firestore, `users/${authUser.uid}/incomes`),
-        (snapshot) => {
-          const incomeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'income' } as Transaction));
-          setIncomes(incomeData);
-          checkAllDataLoaded();
-        }, (error) => { console.error("Error fetching incomes:", error); checkAllDataLoaded(); }
-      );
-      unsubscribes.push(incomesUnsub);
+      const createSubscription = (path: string, setData: React.Dispatch<any>, type?: 'income' | 'expense') => {
+        const unsubscribe = onSnapshot(
+          collection(firestore, `users/${authUser.uid}/${path}`),
+          (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ 
+              id: doc.id, 
+              ...doc.data(),
+              ...(type && { type }) // Add type for transactions
+            }));
+            setData(data);
+            if (loadedSources < dataSources.length) checkAllDataLoaded();
+          },
+          (error) => {
+            console.error(`Error fetching ${path}:`, error);
+            if (loadedSources < dataSources.length) checkAllDataLoaded();
+          }
+        );
+        return unsubscribe;
+      };
 
-      const expensesUnsub = onSnapshot(
-        collection(firestore, `users/${authUser.uid}/expenses`),
-        (snapshot) => {
-          const expenseData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'expense' } as Transaction));
-          setExpenses(expenseData);
-          checkAllDataLoaded();
-        }, (error) => { console.error("Error fetching expenses:", error); checkAllDataLoaded(); }
-      );
-      unsubscribes.push(expensesUnsub);
-
-      const categoriesUnsub = onSnapshot(
-        collection(firestore, `users/${authUser.uid}/categories`),
-        (snapshot) => {
-           const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-          setCategories(cats);
-          checkAllDataLoaded();
-        }, (error) => { console.error("Error fetching categories:", error); checkAllDataLoaded(); }
-      );
-      unsubscribes.push(categoriesUnsub);
-      
-      const usersUnsub = onSnapshot(
-        collection(firestore, `users/${authUser.uid}/app_users`),
-        (snapshot) => {
-           const appUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-          setUsers(appUsers);
-          checkAllDataLoaded();
-        }, (error) => { console.error("Error fetching app_users:", error); checkAllDataLoaded(); }
-      );
-      unsubscribes.push(usersUnsub);
+      unsubscribes.push(createSubscription('incomes', setIncomes, 'income'));
+      unsubscribes.push(createSubscription('expenses', setExpenses, 'expense'));
+      unsubscribes.push(createSubscription('categories', setCategories));
+      unsubscribes.push(createSubscription('app_users', setUsers));
 
       return () => {
         unsubscribes.forEach(unsub => unsub());
       };
     } else if (!authUser) {
-      // Clear data and loading state when user logs out
       setIncomes([]);
       setExpenses([]);
       setCategories([]);
@@ -144,6 +136,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     categories,
     users,
     addTransaction,
+    updateTransaction,
     addCategory,
     updateCategory,
     deleteCategory,
