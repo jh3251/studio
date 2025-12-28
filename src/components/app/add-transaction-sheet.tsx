@@ -17,13 +17,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/firebase';
 
 const transactionFormSchema = z.object({
   userName: z.string().min(2, 'User name must be at least 2 characters.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   type: z.enum(['income', 'expense']),
-  categoryId: z.string().min(1, 'Please select a category.'),
+  categoryId: z.string().optional(),
   date: z.date(),
 });
 
@@ -37,28 +38,42 @@ interface AddTransactionSheetProps {
 export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionSheetProps) {
   const { categories, addTransaction } = useAppContext();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      userName: '',
+      userName: user?.displayName || user?.email || '',
       description: '',
       type: 'expense',
       date: new Date(),
     },
   });
+  
+  const transactionType = form.watch('type');
 
   const onSubmit = async (data: TransactionFormValues) => {
+     if (data.type === 'expense' && !data.categoryId) {
+      form.setError('categoryId', { type: 'manual', message: 'Please select a category for expenses.' });
+      return;
+    }
+    
     try {
       await addTransaction({
         ...data,
+        categoryId: data.categoryId || '', // Ensure categoryId is not undefined
         date: data.date.toISOString(),
       });
       toast({
         title: 'Transaction added',
         description: `Successfully added "${data.description}".`,
       });
-      form.reset();
+      form.reset({
+        userName: user?.displayName || user?.email || '',
+        description: '',
+        type: 'expense',
+        date: new Date(),
+      });
       onOpenChange(false);
     } catch (error) {
        toast({
@@ -147,26 +162,28 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
                 </FormItem>
               )}
             />
-             <FormField
-              control={form.control}
-              name="categoryId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {transactionType === 'expense' && (
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="date"
