@@ -70,7 +70,7 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <>
