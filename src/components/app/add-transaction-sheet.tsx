@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
@@ -13,9 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
@@ -26,7 +23,9 @@ const transactionFormSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive.'),
   type: z.enum(['income', 'expense']),
   categoryId: z.string().optional(),
-  date: z.date(),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -36,6 +35,16 @@ interface AddTransactionSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   transactionToEdit?: Transaction | null;
 }
+
+const formatDateForInput = (date: Date | string) => {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  if (isNaN(d.getTime())) return '';
+  // Format to YYYY-MM-DD
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
   const { categories, users, addTransaction, updateTransaction } = useAppContext();
@@ -48,7 +57,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     defaultValues: {
       description: '',
       type: 'expense',
-      date: new Date(),
+      date: formatDateForInput(new Date()),
     },
   });
 
@@ -56,7 +65,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     if (isEditMode && transactionToEdit) {
       form.reset({
         ...transactionToEdit,
-        date: new Date(transactionToEdit.date),
+        date: formatDateForInput(transactionToEdit.date),
         categoryId: transactionToEdit.categoryId || undefined,
       });
     } else {
@@ -65,7 +74,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         description: '',
         amount: undefined,
         type: 'expense',
-        date: new Date(),
+        date: formatDateForInput(new Date()),
         categoryId: undefined,
       });
     }
@@ -80,11 +89,14 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     }
     
     try {
+       // Convert the YYYY-MM-DD string to a full ISO string at UTC midnight
+      const dateAsISOString = new Date(data.date).toISOString();
+
       if (isEditMode && transactionToEdit) {
         await updateTransaction({
           ...data,
           id: transactionToEdit.id,
-          date: data.date.toISOString(),
+          date: dateAsISOString,
           categoryId: data.type === 'expense' ? data.categoryId || '' : '',
         });
         toast({
@@ -94,8 +106,8 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
       } else {
         await addTransaction({
           ...data,
+          date: dateAsISOString,
           categoryId: data.type === 'expense' ? data.categoryId || '' : '',
-          date: data.date.toISOString(),
         });
         toast({
           title: 'Transaction added',
@@ -221,36 +233,15 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                 )}
               />
             )}
-            <FormField
+             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem>
                   <FormLabel>Transaction Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
