@@ -19,6 +19,7 @@ import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 
 const transactionFormSchema = z.object({
+  userName: z.string().min(2, 'User name must be at least 2 characters.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   type: z.enum(['income', 'expense']),
@@ -40,6 +41,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
+      userName: '',
       description: '',
       type: 'expense',
       date: new Date(),
@@ -76,6 +78,19 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
         </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+            <FormField
+              control={form.control}
+              name="userName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>User Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="description"

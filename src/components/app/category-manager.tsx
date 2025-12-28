@@ -88,7 +88,7 @@ export function CategoryManager() {
   const onSubmit = async (data: CategoryFormValues) => {
     try {
       if (editingCategory) {
-        await updateCategory({ id: editingCategory.id, ...data, userId: editingCategory.userId });
+        await updateCategory({ id: editingCategory.id, ...data });
         toast({ title: 'Category Updated', description: `Category "${data.name}" has been updated.` });
       } else {
         await addCategory(data);

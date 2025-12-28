@@ -1,0 +1,188 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the BalanceWise application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "Expense": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expense",
+      "type": "object",
+      "description": "Represents an expense recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the expense."
+        },
+        "userName": {
+          "type": "string",
+          "description": "Name of the user who recorded the expense."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category of the expense. (Relationship: Category 1:N Expense)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the expense.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the expense."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the expense."
+        }
+      },
+      "required": [
+        "id",
+        "userName",
+        "categoryId",
+        "date",
+        "amount"
+      ]
+    },
+    "Income": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Income",
+      "type": "object",
+      "description": "Represents an income recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the income."
+        },
+        "userName": {
+          "type": "string",
+          "description": "Name of the user who recorded the income."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the income.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the income."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the income."
+        }
+      },
+      "required": [
+        "id",
+        "userName",
+        "date",
+        "amount"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category."
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon for the category."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "icon"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "email"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores expense categories.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expense records.",
+          "params": [
+            {
+              "name": "expenseId",
+              "description": "The unique identifier for the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/incomes/{incomeId}",
+        "definition": {
+          "entityName": "Income",
+          "schema": {
+            "$ref": "#/backend/entities/Income"
+          },
+          "description": "Stores income records.",
+          "params": [
+            {
+              "name": "incomeId",
+              "description": "The unique identifier for the income."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is simplified to use root collections for categories, expenses, and incomes. Since there is only one authenticated user (the admin), there's no need for user-specific subcollections. Authorization will be handled by securing the entire database to only allow access to the authenticated admin user. The 'userName' field within transactions will be used to distinguish between different people's entries at the application level."
+  }
+}

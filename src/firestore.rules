@@ -1,0 +1,75 @@
+/**
+ * This ruleset enforces a strict security model where only a single, authenticated
+ * user (the administrator) can read from and write to the database.
+ *
+ * Core Philosophy:
+ * The entire application is managed by one administrative user. All data is stored
+ * in global collections, and access is universally granted to this single user.
+ * There is no concept of data ownership by multiple distinct end-users at the
+ * security rule level.
+ *
+ * Data Structure:
+ * Data is organized into top-level collections: `categories`, `expenses`, and `incomes`.
+ * This flat structure is simple and sufficient since complex user-based permissions
+ * are not required.
+ *
+ * Key Security Decisions:
+ * - Default Deny: All paths are closed by default.
+ * - Global Authentication Gate: Every read and write operation across the entire
+ *   database is protected by a single check: `isSignedIn()`. This ensures that
+*   no unauthenticated access is possible.
+*
+* Denormalization for Authorization:
+* Not applicable in this model. Since there is only one user, there is no need to
+* denormalize data for ownership checks. The global authentication check is
+* sufficient.
+*
+* Structural Segregation:
+* Not applicable. There is no public or private data to segregate. The entire
+* database is considered private to the single administrative user.
+*/
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if a user is authenticated.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Secures expense categories. Only the admin can access.
+     * @path /categories/{categoryId}
+     * @allow (read, write) Any authenticated user (the admin) can manage categories.
+     * @deny Unauthenticated users are denied all access.
+     */
+    match /categories/{categoryId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Secures expense records. Only the admin can access.
+     * @path /expenses/{expenseId}
+     * @allow (read, write) Any authenticated user (the admin) can manage expenses.
+     * @deny Unauthenticated users are denied all access.
+     */
+    match /expenses/{expenseId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Secures income records. Only the admin can access.
+     * @path /incomes/{incomeId}
+     * @allow (read, write) Any authenticated user (the admin) can manage incomes.
+     * @deny Unauthenticated users are denied all access.
+     */
+    match /incomes/{incomeId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Explicitly deny access to any other collections.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

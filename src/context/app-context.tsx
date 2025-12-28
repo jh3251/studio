@@ -10,8 +10,8 @@ import type { Transaction, Category } from '@/lib/types';
 interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => void;
-  addCategory: (category: Omit<Category, 'id' | 'userId'>) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  addCategory: (category: Omit<Category, 'id'>) => void;
   updateCategory: (category: Category) => void;
   deleteCategory: (id: string) => void;
   loading: boolean;
@@ -31,7 +31,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       
       const incomeUnsub = onSnapshot(
-        collection(firestore, `users/${user.uid}/incomes`),
+        collection(firestore, `incomes`),
         (snapshot) => {
           const incomes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'income' } as Transaction));
           setTransactions(prev => [...prev.filter(t => t.type !== 'income'), ...incomes]);
@@ -39,16 +39,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       );
       
       const expensesUnsub = onSnapshot(
-        collection(firestore, `users/${user.uid}/expenses`),
+        collection(firestore, `expenses`),
         (snapshot) => {
           const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'expense' } as Transaction));
           setTransactions(prev => [...prev.filter(t => t.type !== 'expense'), ...expenses]);
-          setLoading(false); // Consider loading finished after both are initially read
+          setLoading(false);
         }
       );
 
       const categoriesUnsub = onSnapshot(
-        collection(firestore, `users/${user.uid}/categories`),
+        collection(firestore, `categories`),
         (snapshot) => {
            const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
           setCategories(cats);
@@ -67,33 +67,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, firestore]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     if (!user) return;
     const { type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    addDocumentNonBlocking(collection(firestore, `users/${user.uid}/${collectionName}`), {
-      ...data,
-      userId: user.uid,
-    });
+    addDocumentNonBlocking(collection(firestore, `${collectionName}`), data);
   };
   
-  const addCategory = async (category: Omit<Category, 'id' | 'userId'>) => {
+  const addCategory = async (category: Omit<Category, 'id'>) => {
     if (!user) return;
-    addDocumentNonBlocking(collection(firestore, `users/${user.uid}/categories`), {
-      ...category,
-      userId: user.uid,
-    });
+    addDocumentNonBlocking(collection(firestore, `categories`), category);
   };
   
   const updateCategory = async (updatedCategory: Category) => {
     if (!user) return;
     const { id, ...data } = updatedCategory;
-    updateDocumentNonBlocking(doc(firestore, `users/${user.uid}/categories`, id), data);
+    updateDocumentNonBlocking(doc(firestore, `categories`, id), data);
   };
   
   const deleteCategory = async (id: string) => {
     if (!user) return;
-    deleteDocumentNonBlocking(doc(firestore, `users/${user.uid}/categories`, id));
+    deleteDocumentNonBlocking(doc(firestore, `categories`, id));
   };
 
   const value = {

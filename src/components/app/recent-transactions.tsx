@@ -33,6 +33,7 @@ export function RecentTransactions() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>User</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="hidden sm:table-cell">Category</TableHead>
                 <TableHead className="hidden md:table-cell">Date</TableHead>
@@ -43,7 +44,8 @@ export function RecentTransactions() {
               {sortedTransactions.length > 0 ? (
                 sortedTransactions.map(t => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.description}</TableCell>
+                    <TableCell className="font-medium">{t.userName}</TableCell>
+                    <TableCell>{t.description}</TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Badge variant="outline">{getCategoryName(t.categoryId)}</Badge>
                     </TableCell>
@@ -61,7 +63,7 @@ export function RecentTransactions() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No transactions yet.
                   </TableCell>
                 </TableRow>

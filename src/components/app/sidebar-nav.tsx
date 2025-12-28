@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Scale, LayoutDashboard, BarChart3, Tag, LogOut, Loader2 } from 'lucide-react';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
@@ -35,7 +35,7 @@ export function SidebarNav() {
   };
 
   const getInitials = (name?: string | null) => {
-    if (!name) return 'U';
+    if (!name) return 'A';
     return name
       .split(' ')
       .map(n => n[0])
@@ -75,13 +75,13 @@ export function SidebarNav() {
                 <Loader2 className="w-8 h-8 animate-spin" />
               ) : (
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-                  <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                  <AvatarImage src={user?.photoURL || ''} alt={'Admin'} />
+                  <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                 </Avatar>
               )}
               <div className="flex flex-col items-start text-left">
-                <span className="font-medium text-sm truncate">{user?.displayName || 'Anonymous'}</span>
-                <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                <span className="font-medium text-sm truncate">{user?.email || 'Admin'}</span>
+                <span className="text-xs text-muted-foreground truncate">Administrator</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
