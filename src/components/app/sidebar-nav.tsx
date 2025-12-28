@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Scale, LayoutDashboard, BarChart3, Tag, LogOut, Loader2, Users } from 'lucide-react';
+import { Scale, LayoutDashboard, Tag, LogOut, Loader2, Users } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -21,7 +21,6 @@ import { Button } from '../ui/button';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/reports', icon: BarChart3, label: 'Reports' },
   { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/users', icon: Users, label: 'Users' },
 ];
