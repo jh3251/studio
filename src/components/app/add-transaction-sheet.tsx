@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Loader2 } from 'lucide-react';
+import { parseISO } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
@@ -51,12 +51,17 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   
   const isEditMode = !!transactionToEdit;
 
+  const defaultFormValues: Partial<TransactionFormValues> = {
+    userName: '',
+    amount: undefined,
+    type: 'expense',
+    date: formatDateForInput(new Date()),
+    categoryId: '',
+  };
+
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues: {
-      type: 'expense',
-      date: formatDateForInput(new Date()),
-    },
+    defaultValues: defaultFormValues,
   });
 
   useEffect(() => {
@@ -64,16 +69,10 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
       form.reset({
         ...transactionToEdit,
         date: formatDateForInput(transactionToEdit.date),
-        categoryId: transactionToEdit.categoryId || undefined,
+        categoryId: transactionToEdit.categoryId || '',
       });
     } else {
-      form.reset({
-        userName: '',
-        amount: undefined,
-        type: 'expense',
-        date: formatDateForInput(new Date()),
-        categoryId: undefined,
-      });
+      form.reset(defaultFormValues);
     }
   }, [transactionToEdit, isEditMode, form, isOpen]);
   
@@ -108,7 +107,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         toast({
           title: 'Transaction added',
-          description: `Transaction added successfully.`,
+          description: `A new transaction has been added.`,
         });
       }
       
