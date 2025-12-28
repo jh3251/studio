@@ -2,10 +2,14 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/app/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import { AddTransactionSheet } from '@/components/app/add-transaction-sheet';
+import { useState } from 'react';
 
 export default function AppLayout({
   children,
@@ -14,6 +18,8 @@ export default function AppLayout({
 }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -44,7 +50,16 @@ export default function AppLayout({
         <SidebarNav />
       </Sidebar>
       <SidebarInset>
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <SidebarTrigger className="sm:hidden" />
+            <div className="flex-1" />
+            <Button onClick={() => setIsSheetOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Transaction
+            </Button>
+            <AddTransactionSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
+        </header>
+        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
