@@ -68,7 +68,7 @@ export function UserManager() {
   const onSubmit = async (data: UserFormValues) => {
     try {
       if (editingUser) {
-        await updateUser({ id: editingUser.id, userId: editingUser.userId, ...data });
+        await updateUser({ id: editingUser.id, ...data });
         toast({ title: 'User Updated', description: `User "${data.name}" has been updated.` });
       } else {
         await addUser(data);
