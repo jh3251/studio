@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useAuth, useUser } from '@/firebase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { SumbookIcon } from '@/components/icons/sumbook-icon';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -75,7 +76,7 @@ export default function LoginPage() {
       <div className="flex w-full max-w-sm flex-col items-center space-y-6">
         <div className="flex items-center gap-3 text-center">
             <div className="flex items-center justify-center p-2 rounded-lg bg-primary text-primary-foreground">
-                <Scale className="w-8 h-8" />
+                <SumbookIcon className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold font-headline text-primary">SumBook</h1>
         </div>

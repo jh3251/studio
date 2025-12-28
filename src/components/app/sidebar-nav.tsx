@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Scale, LayoutDashboard, Tag, LogOut, Loader2, Users } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
+import { SumbookIcon } from '../icons/sumbook-icon';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -47,7 +48,7 @@ export function SidebarNav() {
     <>
       <div className="flex items-center gap-3 px-4 py-6">
         <div className="flex items-center justify-center p-2 rounded-lg bg-primary text-primary-foreground">
-          <Scale className="w-6 h-6" />
+          <SumbookIcon className="w-6 h-6 text-white" />
         </div>
         <span className="text-lg font-semibold font-headline">SumBook</span>
       </div>
