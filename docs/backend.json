@@ -119,22 +119,22 @@
           "type": "string",
           "description": "Name of the category."
         },
-        "description": {
+        "icon": {
           "type": "string",
-          "description": "Description of the category."
+          "description": "Icon for the category."
         }
       },
       "required": [
         "id",
         "userId",
-        "name"
+        "name",
+        "icon"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "google"
     ]
   },
   "firestore": {

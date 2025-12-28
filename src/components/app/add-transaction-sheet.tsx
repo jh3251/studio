@@ -46,18 +46,25 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
     },
   });
 
-  const onSubmit = (data: TransactionFormValues) => {
-    addTransaction({
-      id: crypto.randomUUID(),
-      ...data,
-      date: data.date.toISOString(),
-    });
-    toast({
-      title: 'Transaction added',
-      description: `Successfully added "${data.description}".`,
-    });
-    form.reset();
-    onOpenChange(false);
+  const onSubmit = async (data: TransactionFormValues) => {
+    try {
+      await addTransaction({
+        ...data,
+        date: data.date.toISOString(),
+      });
+      toast({
+        title: 'Transaction added',
+        description: `Successfully added "${data.description}".`,
+      });
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not add transaction.",
+      });
+    }
   };
 
   return (

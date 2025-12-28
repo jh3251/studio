@@ -1,14 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+
 import type { Transaction, Category } from '@/lib/types';
-import { initialTransactions, initialCategories } from '@/lib/data';
 
 interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
-  addTransaction: (transaction: Transaction) => void;
-  addCategory: (category: Category) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => void;
+  addCategory: (category: Omit<Category, 'id' | 'userId'>) => void;
   updateCategory: (category: Category) => void;
   deleteCategory: (id: string) => void;
   loading: boolean;
@@ -20,30 +22,65 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   useEffect(() => {
-    // Simulate loading data from an API
-    setTimeout(() => {
-      setTransactions(initialTransactions);
-      setCategories(initialCategories);
-      setLoading(false);
-    }, 500);
-  }, []);
+    if (user && firestore) {
+      setLoading(true);
+      const transactionsUnsub = onSnapshot(
+        collection(firestore, `users/${user.uid}/transactions`),
+        (snapshot) => {
+          const trans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+          setTransactions(trans);
+          setLoading(false);
+        }
+      );
 
-  const addTransaction = (transaction: Transaction) => {
-    setTransactions(prev => [transaction, ...prev]);
+      const categoriesUnsub = onSnapshot(
+        collection(firestore, `users/${user.uid}/categories`),
+        (snapshot) => {
+           const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+          setCategories(cats);
+        }
+      );
+
+      return () => {
+        transactionsUnsub();
+        categoriesUnsub();
+      };
+    } else if (!user) {
+      setTransactions([]);
+      setCategories([]);
+      setLoading(false);
+    }
+  }, [user, firestore]);
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
+    if (!user) return;
+    await addDoc(collection(firestore, `users/${user.uid}/transactions`), {
+      ...transaction,
+      userId: user.uid,
+    });
   };
   
-  const addCategory = (category: Category) => {
-    setCategories(prev => [...prev, category]);
+  const addCategory = async (category: Omit<Category, 'id' | 'userId'>) => {
+    if (!user) return;
+    await addDoc(collection(firestore, `users/${user.uid}/categories`), {
+      ...category,
+      userId: user.uid,
+    });
   };
   
-  const updateCategory = (updatedCategory: Category) => {
-    setCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
+  const updateCategory = async (updatedCategory: Category) => {
+    if (!user) return;
+    const { id, ...data } = updatedCategory;
+    await updateDoc(doc(firestore, `users/${user.uid}/categories`, id), data);
   };
   
-  const deleteCategory = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
+  const deleteCategory = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(firestore, `users/${user.uid}/categories`, id));
   };
 
   const value = {

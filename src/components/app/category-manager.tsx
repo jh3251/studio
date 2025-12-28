@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '../ui/skeleton';
+import { Category } from '@/lib/types';
 
 const iconNames = [
   'ShoppingCart', 'Utensils', 'Home', 'Car', 'HeartPulse', 'BookOpen', 'Gift', 'Plane',
@@ -72,33 +73,49 @@ export function CategoryManager() {
   const { categories, addCategory, updateCategory, deleteCategory, loading } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<z.infer<typeof categorySchema> & { id: string } | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
   });
 
-  const handleDialogOpen = (category: z.infer<typeof categorySchema> & { id: string } | null) => {
+  const handleDialogOpen = (category: Category | null) => {
     setEditingCategory(category);
-    form.reset(category ? { name: category.name, icon: category.icon } : { name: '', icon: 'ShoppingCart' });
+    form.reset(category ? { name: category.name, icon: category.icon as IconName } : { name: '', icon: 'ShoppingCart' });
     setIsDialogOpen(true);
   };
 
-  const onSubmit = (data: CategoryFormValues) => {
-    if (editingCategory) {
-      updateCategory({ id: editingCategory.id, ...data });
-      toast({ title: 'Category Updated', description: `Category "${data.name}" has been updated.` });
-    } else {
-      addCategory({ id: crypto.randomUUID(), ...data });
-      toast({ title: 'Category Added', description: `Category "${data.name}" has been added.` });
+  const onSubmit = async (data: CategoryFormValues) => {
+    try {
+      if (editingCategory) {
+        await updateCategory({ id: editingCategory.id, ...data, userId: editingCategory.userId });
+        toast({ title: 'Category Updated', description: `Category "${data.name}" has been updated.` });
+      } else {
+        await addCategory(data);
+        toast({ title: 'Category Added', description: `Category "${data.name}" has been added.` });
+      }
+      setIsDialogOpen(false);
+      setEditingCategory(null);
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not save category.",
+      });
     }
-    setIsDialogOpen(false);
-    setEditingCategory(null);
   };
 
-  const handleDelete = (id: string) => {
-    deleteCategory(id);
-    toast({ title: 'Category Deleted', variant: 'destructive' });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCategory(id);
+      toast({ title: 'Category Deleted', variant: 'destructive' });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not delete category.",
+      });
+    }
   };
   
   if (loading) {
