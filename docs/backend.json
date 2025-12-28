@@ -4,66 +4,73 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AppUser",
       "type": "object",
-      "description": "Represents a person within the app for tracking purposes, managed by the main authenticated user.",
+      "description": "Represents a person within a specific store for tracking purposes.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the app user profile."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The UID of the authenticated Firebase user who owns this record."
-        },
-        "name": {
-          "type": "string",
-          "description": "Display name of the person."
-        }
+        "id": { "type": "string" },
+        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns this record." },
+        "storeId": { "type": "string", "description": "The ID of the store this user belongs to." },
+        "name": { "type": "string", "description": "Display name of the person." }
       },
-      "required": ["id", "userId", "name"]
+      "required": ["id", "userId", "storeId", "name"]
     },
     "Expense": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Expense",
       "type": "object",
-      "description": "Represents an expense recorded by the main authenticated user.",
+      "description": "Represents an expense recorded within a specific store.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
-        "userName": { "type": "string", "description": "Name of the person associated with the expense." },
+        "storeId": { "type": "string", "description": "The ID of the store this expense belongs to." },
+        "userName": { "type": "string" },
         "categoryId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "amount": { "type": "number" },
         "description": { "type": "string" }
       },
-      "required": ["id", "userId", "userName", "categoryId", "date", "amount"]
+      "required": ["id", "userId", "storeId", "userName", "categoryId", "date", "amount"]
     },
     "Income": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Income",
       "type": "object",
-      "description": "Represents an income recorded by the main authenticated user.",
+      "description": "Represents an income recorded within a specific store.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
-        "userName": { "type": "string", "description": "Name of the person associated with the income." },
+        "storeId": { "type": "string", "description": "The ID of the store this income belongs to." },
+        "userName": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "amount": { "type": "number" },
         "description": { "type": "string" }
       },
-      "required": ["id", "userId", "userName", "date", "amount"]
+      "required": ["id", "userId", "storeId", "userName", "date", "amount"]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a category for expenses.",
+      "description": "Represents an expense category within a specific store.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
+        "storeId": { "type": "string", "description": "The ID of the store this category belongs to." },
         "name": { "type": "string" },
         "icon": { "type": "string" }
       },
-      "required": ["id", "userId", "name", "icon"]
+      "required": ["id", "userId", "storeId", "name", "icon"]
+    },
+    "Store": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Store",
+      "type": "object",
+      "description": "Represents a store or financial context managed by a user.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string", "description": "The UID of the user who owns this store." },
+        "name": { "type": "string", "description": "The name of the store." }
+      },
+      "required": ["id", "userId", "name"]
     }
   },
   "auth": {
@@ -72,38 +79,46 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/app_users/{appUserId}",
+        "path": "/users/{userId}/stores/{storeId}",
+        "definition": {
+          "entityName": "Store",
+          "schema": { "$ref": "#/backend/entities/Store" },
+          "description": "Stores the user's different financial contexts or 'stores'."
+        }
+      },
+      {
+        "path": "/users/{userId}/stores/{storeId}/app_users/{appUserId}",
         "definition": {
           "entityName": "AppUser",
           "schema": { "$ref": "#/backend/entities/AppUser" },
-          "description": "Stores user profiles managed by the main authenticated user."
+          "description": "Stores user profiles specific to a store."
         }
       },
       {
-        "path": "/users/{userId}/categories/{categoryId}",
+        "path": "/users/{userId}/stores/{storeId}/categories/{categoryId}",
         "definition": {
           "entityName": "Category",
           "schema": { "$ref": "#/backend/entities/Category" },
-          "description": "Stores expense categories created by the main authenticated user."
+          "description": "Stores expense categories specific to a store."
         }
       },
       {
-        "path": "/users/{userId}/expenses/{expenseId}",
+        "path": "/users/{userId}/stores/{storeId}/expenses/{expenseId}",
         "definition": {
           "entityName": "Expense",
           "schema": { "$ref": "#/backend/entities/Expense" },
-          "description": "Stores expense records created by the main authenticated user."
+          "description": "Stores expense records specific to a store."
         }
       },
       {
-        "path": "/users/{userId}/incomes/{incomeId}",
+        "path": "/users/{userId}/stores/{storeId}/incomes/{incomeId}",
         "definition": {
           "entityName": "Income",
           "schema": { "$ref": "#/backend/entities/Income" },
-          "description": "Stores income records created by the main authenticated user."
+          "description": "Stores income records specific to a store."
         }
       }
     ],
-    "reasoning": "The Firestore structure uses a top-level `users` collection where each document corresponds to a signed-in Firebase Auth user. All data for that user (their app users, categories, expenses, and incomes) is stored in subcollections under their user document. This structure ensures that all of a user's data is siloed, which makes writing security rules straightforward: a user can only access documents within their own `/users/{userId}` path."
+    "reasoning": "The structure is now hierarchical. A top-level `users` collection holds user documents. Each user document contains a `stores` subcollection. All data (app_users, categories, expenses, incomes) is then nested under a specific store. This ensures data isolation both between users and between the different stores of a single user."
   }
 }

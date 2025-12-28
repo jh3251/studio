@@ -66,16 +66,18 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   });
 
   useEffect(() => {
-    if (isEditMode && transactionToEdit) {
-      form.reset({
-        userName: transactionToEdit.userName || '',
-        amount: transactionToEdit.amount || undefined,
-        type: transactionToEdit.type,
-        date: formatDateForInput(transactionToEdit.date),
-        categoryId: transactionToEdit.categoryId || '',
-      });
-    } else {
-      form.reset(defaultFormValues);
+    if (isOpen) {
+      if (isEditMode && transactionToEdit) {
+        form.reset({
+          userName: transactionToEdit.userName || '',
+          amount: transactionToEdit.amount || undefined,
+          type: transactionToEdit.type,
+          date: formatDateForInput(transactionToEdit.date),
+          categoryId: transactionToEdit.categoryId || '',
+        });
+      } else {
+        form.reset(defaultFormValues);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactionToEdit, isEditMode, form, isOpen]);
@@ -161,7 +163,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

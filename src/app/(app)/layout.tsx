@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { AddTransactionSheet } from '@/components/app/add-transaction-sheet';
+import { StoreSwitcher } from '@/components/app/store-switcher';
+import { useAppContext } from '@/context/app-context';
 
 export default function AppLayout({
   children,
@@ -16,6 +18,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
+  const { activeStore, stores } = useAppContext();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -51,8 +54,9 @@ export default function AppLayout({
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <SidebarTrigger className="sm:hidden" />
+            <StoreSwitcher />
             <div className="flex-1" />
-            <Button onClick={() => setIsSheetOpen(true)}>
+            <Button onClick={() => setIsSheetOpen(true)} disabled={!activeStore}>
               <PlusCircle className="mr-2 h-4 w-4" />
               New Transaction
             </Button>

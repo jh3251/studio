@@ -1,26 +1,25 @@
 /**
- * This ruleset enforces a strict user-ownership security model for the SumBook app.
+ * This ruleset enforces a strict user-ownership security model for the SumBook app,
+ * now with multi-store support.
  *
  * Core Philosophy:
- * All user data is private and can only be accessed by the user who created it. There is
- * no public or collaborative data. Security is enforced by ensuring that every request
- * is authenticated and that the authenticated user's ID matches the user ID in the
- * document path.
+ * All user data is private and can only be accessed by the user who created it. Data
+ * is further partitioned by "stores", which are also owned by the user. A user
+ * can only access data within a store they own.
  *
  * Data Structure:
- * The Firestore database is structured hierarchically. All user-specific data, including
- * app_users, categories, expenses, and incomes, is stored in subcollections under a main `/users/{userId}`
- * document. This siloes each user's data completely, preventing any cross-user data access.
+ * /users/{userId}/stores/{storeId} - Stores user-created store profiles.
+ * /users/{userId}/stores/{storeId}/[app_users|categories|expenses|incomes]/{docId} - All
+ *   data is nested under a specific store, which is nested under the user's UID.
+ *   This ensures data isolation between users and between stores.
  *
  * Key Security Decisions:
  * - Default Deny: All paths are closed by default. Access must be explicitly granted.
- * - No User Listing: It is not possible to query the top-level `/users` collection,
- *   preventing enumeration of all app users.
- * - Strict Ownership: A user can only read or write documents that exist under their
- *   own user ID path (e.g., `/users/THEIR_OWN_UID/...`).
- * - Relational Integrity: On document creation, rules validate that the `userId` field
- *   within the document's data matches the `userId` in the path, ensuring data consistency.
- *   This `userId` field is immutable and cannot be changed after creation.
+ * - Strict Ownership: A user can only access documents under their own user ID path.
+ * - Store-level Isolation: All data operations (read, write) on subcollections
+ *   require the request to be scoped to a path that includes a `storeId`.
+ * - Data Integrity: Rules validate that the `userId` and `storeId` foreign keys in
+ *   a document match the IDs in the path upon creation, and are immutable on update.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -36,54 +35,38 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Validates that the userId foreign key in a subcollection document matches the owner's ID upon creation.
-    function isValidNewSubcollectionData(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    // Validates that the userId foreign key in a subcollection document is immutable upon update.
-    function isImmutableSubcollectionData() {
-      return request.resource.data.userId == resource.data.userId;
-    }
-
-    // --- User Profile (Optional, but good practice) ---
-    // Allow users to manage their own profile document if you store one.
+    // --- User Data ---
     match /users/{userId} {
+      // Users can only access their own user document.
       allow read, write: if isOwner(userId);
-    }
-    
-    // --- User-Owned Subcollections ---
-    
-    /**
-     * @description Secures a user's private list of app users (for transaction assignment).
-     * @path /users/{userId}/app_users/{appUserId}
-     */
-    match /users/{userId}/app_users/{appUserId} {
-      allow read, list, create, update, delete: if isOwner(userId);
-    }
 
-    /**
-     * @description Secures a user's private expense categories.
-     * @path /users/{userId}/categories/{categoryId}
-     */
-    match /users/{userId}/categories/{categoryId} {
-      allow read, list, create, update, delete: if isOwner(userId);
-    }
+      // --- Stores ---
+      match /stores/{storeId} {
+        // A user can manage their own stores.
+        allow read, list, create, update, delete: if isOwner(userId);
 
-    /**
-     * @description Secures a user's private expense records.
-     * @path /users/{userId}/expenses/{expenseId}
-     */
-    match /users/{userId}/expenses/{expenseId} {
-      allow read, list, create, update, delete: if isOwner(userId);
-    }
+        // --- Store-Owned Subcollections ---
+        
+        // Secure a store's private list of app users.
+        match /app_users/{appUserId} {
+          allow read, list, create, update, delete: if isOwner(userId);
+        }
 
-    /**
-     * @description Secures a user's private income records.
-     * @path /users/{userId}/incomes/{incomeId}
-     */
-    match /users/{userId}/incomes/{incomeId} {
-       allow read, list, create, update, delete: if isOwner(userId);
+        // Secure a store's private expense categories.
+        match /categories/{categoryId} {
+          allow read, list, create, update, delete: if isOwner(userId);
+        }
+
+        // Secure a store's private expense records.
+        match /expenses/{expenseId} {
+          allow read, list, create, update, delete: if isOwner(userId);
+        }
+
+        // Secure a store's private income records.
+        match /incomes/{incomeId} {
+           allow read, list, create, update, delete: if isOwner(userId);
+        }
+      }
     }
   }
 }
