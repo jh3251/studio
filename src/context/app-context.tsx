@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
+import { useMemoFirebase } from '@/firebase/provider';
 
-import type { Transaction, Category, User } from '@/lib/types';
+import type { Transaction, Category, User, TransactionType } from '@/lib/types';
 
 interface AppContextType {
   transactions: Transaction[];
@@ -12,6 +13,7 @@ interface AppContextType {
   users: User[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   updateTransaction: (transaction: Omit<Transaction, 'userId'>) => Promise<void>;
+  deleteTransaction: (transactionId: string, type: TransactionType) => Promise<void>;
   addCategory: (category: Omit<Category, 'id' | 'userId'>) => Promise<void>;
   updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId'>>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -24,8 +26,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [incomes, setIncomes] = useState<Transaction[]>([]);
-  const [expenses, setExpenses] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +46,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const { id, type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
     await updateDoc(doc(firestore, `users/${authUser.uid}/${collectionName}`, id), data);
+  }, [authUser, firestore]);
+  
+  const deleteTransaction = useCallback(async (transactionId: string, type: TransactionType) => {
+    if (!authUser || !firestore) return;
+    const collectionName = type === 'income' ? 'incomes' : 'expenses';
+    await deleteDoc(doc(firestore, `users/${authUser.uid}/${collectionName}`, transactionId));
   }, [authUser, firestore]);
   
   const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId'>) => {
@@ -82,49 +89,63 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (authUser && firestore) {
       setLoading(true);
+      const collectionsToLoad = ['categories', 'app_users', 'incomes', 'expenses'];
+      let loadedCount = 0;
 
-      const dataSources = ['incomes', 'expenses', 'categories', 'app_users'];
-      const unsubscribes: (() => void)[] = [];
-      let loadedSources = 0;
-
-      const checkAllDataLoaded = () => {
-        loadedSources++;
-        if (loadedSources === dataSources.length) {
+      const checkLoadingComplete = () => {
+        loadedCount++;
+        if (loadedCount === collectionsToLoad.length) {
           setLoading(false);
         }
       };
+      
+      const incomesCol = collection(firestore, `users/${authUser.uid}/incomes`);
+      const expensesCol = collection(firestore, `users/${authUser.uid}/expenses`);
+      const categoriesCol = collection(firestore, `users/${authUser.uid}/categories`);
+      const usersCol = collection(firestore, `users/${authUser.uid}/app_users`);
 
-      const createSubscription = (path: string, setData: React.Dispatch<any>, type?: 'income' | 'expense') => {
-        const unsubscribe = onSnapshot(
-          collection(firestore, `users/${authUser.uid}/${path}`),
-          (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ 
-              id: doc.id, 
-              ...doc.data(),
-              ...(type && { type }) // Add type for transactions
-            }));
-            setData(data);
-            if (loadedSources < dataSources.length) checkAllDataLoaded();
-          },
-          (error) => {
-            console.error(`Error fetching ${path}:`, error);
-            if (loadedSources < dataSources.length) checkAllDataLoaded();
-          }
-        );
-        return unsubscribe;
-      };
+      const unsubIncomes = onSnapshot(incomesCol, 
+        (snapshot) => {
+          const incomeData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'income' })) as Transaction[];
+          setTransactions(prev => [...prev.filter(t => t.type !== 'income'), ...incomeData]);
+          if(loadedCount < collectionsToLoad.length) checkLoadingComplete();
+        },
+        (error) => { console.error("incomes listener error", error); if(loadedCount < collectionsToLoad.length) checkLoadingComplete(); }
+      );
+      
+      const unsubExpenses = onSnapshot(expensesCol, 
+        (snapshot) => {
+          const expenseData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'expense' })) as Transaction[];
+           setTransactions(prev => [...prev.filter(t => t.type !== 'expense'), ...expenseData]);
+          if(loadedCount < collectionsToLoad.length) checkLoadingComplete();
+        },
+        (error) => { console.error("expenses listener error", error); if(loadedCount < collectionsToLoad.length) checkLoadingComplete(); }
+      );
 
-      unsubscribes.push(createSubscription('incomes', setIncomes, 'income'));
-      unsubscribes.push(createSubscription('expenses', setExpenses, 'expense'));
-      unsubscribes.push(createSubscription('categories', setCategories));
-      unsubscribes.push(createSubscription('app_users', setUsers));
+      const unsubCategories = onSnapshot(categoriesCol, 
+        (snapshot) => {
+          setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[]);
+          if(loadedCount < collectionsToLoad.length) checkLoadingComplete();
+        },
+        (error) => { console.error("categories listener error", error); if(loadedCount < collectionsToLoad.length) checkLoadingComplete(); }
+      );
+      
+      const unsubUsers = onSnapshot(usersCol, 
+        (snapshot) => {
+          setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[]);
+          if(loadedCount < collectionsToLoad.length) checkLoadingComplete();
+        },
+        (error) => { console.error("users listener error", error); if(loadedCount < collectionsToLoad.length) checkLoadingComplete(); }
+      );
 
       return () => {
-        unsubscribes.forEach(unsub => unsub());
+        unsubIncomes();
+        unsubExpenses();
+        unsubCategories();
+        unsubUsers();
       };
     } else if (!authUser) {
-      setIncomes([]);
-      setExpenses([]);
+      setTransactions([]);
       setCategories([]);
       setUsers([]);
       setLoading(true);
@@ -132,11 +153,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [authUser, firestore]);
 
   const value = {
-    transactions: [...incomes, ...expenses],
+    transactions,
     categories,
     users,
     addTransaction,
     updateTransaction,
+    deleteTransaction,
     addCategory,
     updateCategory,
     deleteCategory,
