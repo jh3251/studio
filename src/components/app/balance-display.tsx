@@ -1,26 +1,43 @@
 'use client';
 
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function BalanceDisplay() {
-  const { transactions, loading } = useAppContext();
+  const { transactions, users, loading } = useAppContext();
 
-  const { balance, income, expense } = useMemo(() => {
-    let income = 0;
-    let expense = 0;
+  const { totalIncome, totalExpense, userBalances } = useMemo(() => {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    const userBalanceMap = new Map<string, { income: number; expense: number }>();
+
+    // Initialize map for all users to show them even if they have no transactions
+    users.forEach(user => {
+        userBalanceMap.set(user.name, { income: 0, expense: 0 });
+    });
+
     transactions.forEach(t => {
       if (t.type === 'income') {
-        income += t.amount;
+        totalIncome += t.amount;
+        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
+        userBalanceMap.set(t.userName, { ...currentUser, income: currentUser.income + t.amount });
       } else {
-        expense += t.amount;
+        totalExpense += t.amount;
+        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
+        userBalanceMap.set(t.userName, { ...currentUser, expense: currentUser.expense + t.amount });
       }
     });
-    return { income, expense, balance: income - expense };
-  }, [transactions]);
+
+    const userBalances = Array.from(userBalanceMap.entries()).map(([name, { income, expense }]) => ({
+      name,
+      balance: income - expense,
+    }));
+
+    return { totalIncome, totalExpense, userBalances };
+  }, [transactions, users]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -31,23 +48,24 @@ export function BalanceDisplay() {
 
   if (loading) {
     return (
-        <div className="grid gap-4 sm:grid-cols-3">
-            <Skeleton className="h-[126px]" />
-            <Skeleton className="h-[126px]" />
-            <Skeleton className="h-[126px]" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
+            <Skeleton className="h-[110px]" />
         </div>
     )
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Income</CardTitle>
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(income)}</div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(totalIncome)}</div>
         </CardContent>
       </Card>
       <Card>
@@ -56,18 +74,29 @@ export function BalanceDisplay() {
           <TrendingDown className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(expense)}</div>
+          <div className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(totalExpense)}</div>
         </CardContent>
       </Card>
-      <Card className="bg-primary/10 border-primary/50">
+       <Card className="bg-primary/10 border-primary/50 col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
+          <CardTitle className="text-sm font-medium">Overall Balance</CardTitle>
           <Wallet className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-primary">{formatCurrency(balance)}</div>
+          <div className="text-2xl font-bold text-primary">{formatCurrency(totalIncome - totalExpense)}</div>
         </CardContent>
       </Card>
+      {userBalances.map(user => (
+        <Card key={user.name}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{user.name}'s Balance</CardTitle>
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-primary/80">{formatCurrency(user.balance)}</div>
+            </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
