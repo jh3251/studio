@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -125,10 +124,10 @@ export function CategoryManager() {
                   <Skeleton className="h-8 w-1/2" />
                   <Skeleton className="h-4 w-3/4" />
               </CardHeader>
-              <CardContent className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+              <CardContent className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
               </CardContent>
           </Card>
       );
@@ -149,21 +148,20 @@ export function CategoryManager() {
       </CardHeader>
       <CardContent>
         {categories.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {categories.map((category) => {
               const IconComponent = getIconComponent(category.icon);
               return (
-                <li key={category.id} className="flex items-center gap-4 rounded-lg border p-3">
-                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                  <IconComponent className="h-5 w-5 text-muted-foreground" />
+                <li key={category.id} className="flex items-center gap-4 rounded-lg border p-4">
+                  <IconComponent className="h-6 w-6 text-muted-foreground" />
                   <span className="flex-1 font-medium">{category.name}</span>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleDialogOpen(category)}>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(category)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -176,7 +174,7 @@ export function CategoryManager() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(category.id)}>Delete</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleDelete(category.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -186,15 +184,15 @@ export function CategoryManager() {
             })}
           </ul>
         ) : (
-          <div className="text-center text-muted-foreground py-12">
-            <p>No categories found.</p>
-            <p className="text-sm">Add your first category to get started.</p>
+          <div className="text-center text-muted-foreground py-16">
+            <p className="font-medium">No categories found.</p>
+            <p className="text-sm mt-1">Add your first category to get started.</p>
           </div>
         )}
       </CardContent>
        {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{editingCategory ? 'Edit' : 'Add'} Category</DialogTitle>
                     <DialogDescription>
@@ -233,7 +231,7 @@ export function CategoryManager() {
                                                 const Icon = Lucide[iconName];
                                                 return (
                                                     <SelectItem key={iconName} value={iconName}>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-3">
                                                             <Icon className="h-4 w-4" />
                                                             <span>{iconName}</span>
                                                         </div>

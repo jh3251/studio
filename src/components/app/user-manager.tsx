@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { PlusCircle, Edit, Trash2, Loader2, GripVertical, User as UserIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, User as UserIcon } from 'lucide-react';
 
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,7 +23,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import {
@@ -105,10 +103,10 @@ export function UserManager() {
                   <Skeleton className="h-8 w-1/2" />
                   <Skeleton className="h-4 w-3/4" />
               </CardHeader>
-              <CardContent className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
+              <CardContent className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
               </CardContent>
           </Card>
       );
@@ -129,20 +127,19 @@ export function UserManager() {
       </CardHeader>
       <CardContent>
         {users.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {users.map((user) => {
               return (
-                <li key={user.id} className="flex items-center gap-4 rounded-lg border p-3">
-                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                  <UserIcon className="h-5 w-5 text-muted-foreground" />
+                <li key={user.id} className="flex items-center gap-4 rounded-lg border p-4">
+                  <UserIcon className="h-6 w-6 text-muted-foreground" />
                   <span className="flex-1 font-medium">{user.name}</span>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleDialogOpen(user)}>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(user)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -155,7 +152,7 @@ export function UserManager() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(user.id)}>Delete</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleDelete(user.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -165,15 +162,15 @@ export function UserManager() {
             })}
           </ul>
         ) : (
-          <div className="text-center text-muted-foreground py-12">
-            <p>No users found.</p>
-            <p className="text-sm">Add your first user to get started.</p>
+          <div className="text-center text-muted-foreground py-16">
+            <p className="font-medium">No users found.</p>
+            <p className="text-sm mt-1">Add your first user to get started.</p>
           </div>
         )}
       </CardContent>
        {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{editingUser ? 'Edit' : 'Add'} User</DialogTitle>
                     <DialogDescription>

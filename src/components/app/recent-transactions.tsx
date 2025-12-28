@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Trash2, Loader2, Eraser } from 'lucide-react';
+import { Edit, Trash2, Loader2, Eraser, MoreVertical } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AddTransactionSheet } from './add-transaction-sheet';
@@ -23,6 +22,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -36,7 +41,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, loading } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -115,92 +120,112 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Transactions</CardTitle>
+            {transactions.length > 0 && (
+               <Button variant="outline" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
+                <Eraser className="mr-2 h-4 w-4" /> Clear All
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead className="hidden sm:table-cell">Category</TableHead>
-                  <TableHead className="hidden md:table-cell">Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedTransactions.length > 0 ? (
-                  sortedTransactions.map(t => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-medium">{t.userName}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {t.type === 'expense' && <Badge variant="outline">{getCategoryName(t.categoryId)}</Badge>}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{new Date(t.date).toLocaleDateString()}</TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right font-semibold',
-                          t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
-                        )}
-                      >
-                        {t.type === 'income' ? '+' : '-'}
-                        {formatCurrency(t.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(t)}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete this transaction.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(t)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
+            <div className="min-h-[400px]">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead className="hidden sm:table-cell">Details</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-[40px] text-right">
+                        <span className="sr-only">Actions</span>
+                    </TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No transactions yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+                </TableHeader>
+                <TableBody>
+                    {sortedTransactions.length > 0 ? (
+                    sortedTransactions.map(t => (
+                        <TableRow key={t.id}>
+                        <TableCell>
+                            <div className="font-medium">{t.userName}</div>
+                            <div className="text-sm text-muted-foreground md:hidden">
+                                {new Date(t.date).toLocaleDateString()}
+                            </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                            {t.type === 'expense' ? (
+                                <Badge variant="outline">{getCategoryName(t.categoryId)}</Badge>
+                            ) : (
+                                <Badge variant="secondary">Cash In</Badge>
+                            )}
+                             <div className="text-xs text-muted-foreground mt-1">
+                                {new Date(t.date).toLocaleDateString()}
+                            </div>
+                        </TableCell>
+                        <TableCell
+                            className={cn(
+                            'text-right font-semibold',
+                            t.type === 'income' ? 'text-green-600 dark:text-green-500' : ''
+                            )}
+                        >
+                            {t.type === 'income' ? '+' : '-'}
+                            {formatCurrency(t.amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">Actions</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEdit(t)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:bg-destructive/10">
+                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </div>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this transaction.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDelete(t)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                            Delete
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        </TableRow>
+                    ))
+                    ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                        No transactions yet.
+                        </TableCell>
+                    </TableRow>
+                    )}
+                </TableBody>
+                </Table>
+          </div>
         </CardContent>
-         <CardFooter className="justify-end">
-          <Button variant="destructive" onClick={() => setIsClearAllDialogOpen(true)} disabled={transactions.length === 0}>
-            <Eraser className="mr-2 h-4 w-4" /> Clear All Data
-          </Button>
-        </CardFooter>
       </Card>
       
       <AddTransactionSheet 
@@ -210,11 +235,11 @@ export function RecentTransactions() {
       />
 
       <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Clear All Transaction Data</DialogTitle>
             <DialogDescription>
-              This is a destructive action and cannot be undone. To confirm, please enter the password.
+              This is a destructive action and cannot be undone. To confirm, please enter the password '12345'.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2 pb-4">
@@ -229,7 +254,7 @@ export function RecentTransactions() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="sm:justify-between">
             <DialogClose asChild>
               <Button variant="ghost">Cancel</Button>
             </DialogClose>

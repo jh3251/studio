@@ -67,13 +67,16 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   useEffect(() => {
     if (isEditMode && transactionToEdit) {
       form.reset({
-        ...transactionToEdit,
+        userName: transactionToEdit.userName || '',
+        amount: transactionToEdit.amount || undefined,
+        type: transactionToEdit.type,
         date: formatDateForInput(transactionToEdit.date),
         categoryId: transactionToEdit.categoryId || '',
       });
     } else {
       form.reset(defaultFormValues);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactionToEdit, isEditMode, form, isOpen]);
   
   const transactionType = form.watch('type');
@@ -93,7 +96,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           ...data,
           id: transactionToEdit.id,
           date: dateAsISOString,
-          categoryId: data.type === 'expense' ? data.categoryId || '' : '',
+          categoryId: data.type === 'expense' ? data.categoryId : '',
         });
         toast({
           title: 'Transaction updated',
@@ -103,7 +106,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         await addTransaction({
           ...data,
           date: dateAsISOString,
-          categoryId: data.type === 'expense' ? data.categoryId || '' : '',
+          categoryId: data.type === 'expense' ? data.categoryId : '',
         });
         toast({
           title: 'Transaction added',
@@ -231,6 +234,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
             />
 
             <SheetFooter>
+               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditMode ? 'Save Changes' : 'Save Transaction'}

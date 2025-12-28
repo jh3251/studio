@@ -48,17 +48,16 @@ export function BalanceDisplay() {
 
   if (loading) {
     return (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-[110px]" />
-            <Skeleton className="h-[110px]" />
-            <Skeleton className="h-[110px]" />
-            <Skeleton className="h-[110px]" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-[126px]" />
+            <Skeleton className="h-[126px]" />
+            <Skeleton className="h-[126px] col-span-1 md:col-span-2" />
         </div>
     )
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Cash In</CardTitle>
@@ -77,13 +76,13 @@ export function BalanceDisplay() {
           <div className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(totalExpense)}</div>
         </CardContent>
       </Card>
-       <Card className="bg-primary/10 border-primary/50 col-span-2">
+       <Card className="col-span-1 md:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Overall Balance</CardTitle>
-          <Wallet className="h-4 w-4 text-primary" />
+          <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-primary">{formatCurrency(totalIncome - totalExpense)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(totalIncome - totalExpense)}</div>
         </CardContent>
       </Card>
       {userBalances.map(user => (
@@ -93,7 +92,7 @@ export function BalanceDisplay() {
                 <UserIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold text-primary/80">{formatCurrency(user.balance)}</div>
+                <div className="text-2xl font-bold text-muted-foreground">{formatCurrency(user.balance)}</div>
             </CardContent>
         </Card>
       ))}
