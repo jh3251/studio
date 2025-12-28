@@ -12,8 +12,14 @@ export interface Transaction {
 }
 
 export interface Category {
-  id: string;
+  id:string;
   userId: string;
   name: string;
   icon: string;
+}
+
+export interface User {
+  id: string;
+  userId: string;
+  name: string;
 }

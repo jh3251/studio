@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 
 const transactionFormSchema = z.object({
-  userName: z.string().min(2, 'User name must be at least 2 characters.'),
+  userName: z.string().min(1, 'User name is required.'),
   description: z.string().min(2, 'Description must be at least 2 characters.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   type: z.enum(['income', 'expense']),
@@ -36,14 +36,13 @@ interface AddTransactionSheetProps {
 }
 
 export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionSheetProps) {
-  const { categories, addTransaction } = useAppContext();
+  const { categories, users, addTransaction } = useAppContext();
   const { toast } = useToast();
   const { user } = useUser();
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      userName: user?.displayName || user?.email || '',
       description: '',
       type: 'expense',
       date: new Date(),
@@ -69,7 +68,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
         description: `Successfully added "${data.description}".`,
       });
       form.reset({
-        userName: user?.displayName || user?.email || '',
+        userName: '',
         description: '',
         type: 'expense',
         date: new Date(),
@@ -98,10 +97,17 @@ export function AddTransactionSheet({ isOpen, onOpenChange }: AddTransactionShee
               name="userName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>User Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., John Doe" {...field} />
-                  </FormControl>
+                  <FormLabel>User</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a user" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}

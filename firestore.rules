@@ -85,6 +85,19 @@ service cloud.firestore {
       allow update: if isExistingOwner(userId) && isImmutableUserData();
       allow delete: if isExistingOwner(userId);
     }
+    
+    /**
+     * @description Secures a user's private list of app users.
+     * @path /users/{userId}/app_users/{appUserId}
+     * @principle Enforces document ownership for all operations within a user's data tree.
+     */
+    match /users/{userId}/app_users/{appUserId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidNewSubcollectionData(userId);
+      allow update: if isExistingOwner(userId) && isImmutableSubcollectionData();
+      allow delete: if isExistingOwner(userId);
+    }
 
     /**
      * @description Secures a user's private expense categories.

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Scale, LayoutDashboard, BarChart3, Tag, LogOut, Loader2 } from 'lucide-react';
+import { Scale, LayoutDashboard, BarChart3, Tag, LogOut, Loader2, Users } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/reports', icon: BarChart3, label: 'Reports' },
   { href: '/categories', icon: Tag, label: 'Categories' },
+  { href: '/users', icon: Users, label: 'Users' },
 ];
 
 export function SidebarNav() {
@@ -55,8 +56,8 @@ export function SidebarNav() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
-                <SidebarMenuButton as="a" isActive={pathname === item.href} tooltip={item.label}>
+              <Link href={item.href}>
+                <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
                   <item.icon className="w-4 h-4" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
