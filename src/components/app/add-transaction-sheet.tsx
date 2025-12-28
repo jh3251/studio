@@ -19,7 +19,6 @@ import type { Transaction } from '@/lib/types';
 
 const transactionFormSchema = z.object({
   userName: z.string().min(1, 'User name is required.'),
-  description: z.string().min(2, 'Description must be at least 2 characters.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   type: z.enum(['income', 'expense']),
   categoryId: z.string().optional(),
@@ -55,7 +54,6 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      description: '',
       type: 'expense',
       date: formatDateForInput(new Date()),
     },
@@ -71,7 +69,6 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     } else {
       form.reset({
         userName: '',
-        description: '',
         amount: undefined,
         type: 'expense',
         date: formatDateForInput(new Date()),
@@ -101,7 +98,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         toast({
           title: 'Transaction updated',
-          description: `Successfully updated "${data.description}".`,
+          description: `Transaction updated successfully.`,
         });
       } else {
         await addTransaction({
@@ -111,7 +108,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         toast({
           title: 'Transaction added',
-          description: `Successfully added "${data.description}".`,
+          description: `Transaction added successfully.`,
         });
       }
       
@@ -156,19 +153,6 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
             />
             <FormField
               control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Groceries" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="amount"
               render={({ field }) => (
                 <FormItem>
@@ -197,13 +181,13 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                         <FormControl>
                           <RadioGroupItem value="expense" />
                         </FormControl>
-                        <FormLabel className="font-normal">Expense</FormLabel>
+                        <FormLabel className="font-normal">Cash Out</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="income" />
                         </FormControl>
-                        <FormLabel className="font-normal">Income</FormLabel>
+                        <FormLabel className="font-normal">Cash In</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>

@@ -40,7 +40,7 @@ export function RecentTransactions() {
       await deleteTransaction(transaction.id, transaction.type);
       toast({
         title: 'Transaction Deleted',
-        description: `Successfully deleted "${transaction.description}".`,
+        description: `Transaction deleted successfully.`,
         variant: 'destructive'
       });
     } catch (error) {
@@ -84,7 +84,6 @@ export function RecentTransactions() {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Description</TableHead>
                   <TableHead className="hidden sm:table-cell">Category</TableHead>
                   <TableHead className="hidden md:table-cell">Date</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
@@ -96,7 +95,6 @@ export function RecentTransactions() {
                   sortedTransactions.map(t => (
                     <TableRow key={t.id}>
                       <TableCell className="font-medium">{t.userName}</TableCell>
-                      <TableCell>{t.description}</TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {t.type === 'expense' && <Badge variant="outline">{getCategoryName(t.categoryId)}</Badge>}
                       </TableCell>
@@ -144,7 +142,7 @@ export function RecentTransactions() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No transactions yet.
                     </TableCell>
                   </TableRow>
