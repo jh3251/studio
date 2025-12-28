@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Scale, Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@/firebase';
@@ -28,19 +28,38 @@ export default function LoginPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSigningIn(true);
+    const adminEmail = "admin@example.com";
+    const adminPassword = "password123";
+
     try {
-      // For this simplified app, we can use a hardcoded user.
-      // In a real app, you would want to securely manage users.
-      await signInWithEmailAndPassword(auth, "admin@example.com", "password123");
+      await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
     } catch (error) {
-      console.error('Error signing in:', error);
-      toast({
-        variant: "destructive",
-        title: "Sign-in Failed",
-        description: "Please check your credentials and try again.",
-      });
-      setIsSigningIn(false);
+        const authError = error as AuthError;
+        // If the user doesn't exist, create it.
+        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+            try {
+                await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
+            } catch (createError) {
+                console.error('Error creating user:', createError);
+                toast({
+                    variant: "destructive",
+                    title: "Sign-in Failed",
+                    description: "Could not create the necessary user account.",
+                });
+                setIsSigningIn(false);
+            }
+        } else {
+            console.error('Error signing in:', error);
+            toast({
+                variant: "destructive",
+                title: "Sign-in Failed",
+                description: "Please check your credentials and try again.",
+            });
+            setIsSigningIn(false);
+        }
     }
+    // Let the onAuthStateChanged listener handle the redirect.
+    // The isSigningIn state will be reset by the useEffect or if an error occurs.
   };
 
   if (isUserLoading || user) {
