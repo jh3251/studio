@@ -7,7 +7,7 @@ export interface Transaction {
   description: string;
   amount: number;
   type: TransactionType;
-  categoryId: string;
+  categoryId: string; // This is optional for income
   date: string;
 }
 
