@@ -3,9 +3,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Scale, Loader2 } from 'lucide-react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -23,6 +25,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -35,8 +38,17 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // Let the useEffect handle the redirect
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Create user profile in Firestore if it doesn't exist
+      const userRef = doc(firestore, 'users', user.uid);
+      setDocumentNonBlocking(userRef, {
+        id: user.uid,
+        name: user.displayName,
+        email: user.email
+      }, { merge: true });
+
     } catch (error) {
       console.error('Error signing in with Google:', error);
     }

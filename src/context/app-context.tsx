@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 import type { Transaction, Category } from '@/lib/types';
 
@@ -28,12 +29,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user && firestore) {
       setLoading(true);
-      const transactionsUnsub = onSnapshot(
-        collection(firestore, `users/${user.uid}/transactions`),
+      
+      const incomeUnsub = onSnapshot(
+        collection(firestore, `users/${user.uid}/incomes`),
         (snapshot) => {
-          const trans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-          setTransactions(trans);
-          setLoading(false);
+          const incomes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'income' } as Transaction));
+          setTransactions(prev => [...prev.filter(t => t.type !== 'income'), ...incomes]);
+        }
+      );
+      
+      const expensesUnsub = onSnapshot(
+        collection(firestore, `users/${user.uid}/expenses`),
+        (snapshot) => {
+          const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'expense' } as Transaction));
+          setTransactions(prev => [...prev.filter(t => t.type !== 'expense'), ...expenses]);
+          setLoading(false); // Consider loading finished after both are initially read
         }
       );
 
@@ -46,7 +56,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       );
 
       return () => {
-        transactionsUnsub();
+        incomeUnsub();
+        expensesUnsub();
         categoriesUnsub();
       };
     } else if (!user) {
@@ -58,15 +69,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
     if (!user) return;
-    await addDoc(collection(firestore, `users/${user.uid}/transactions`), {
-      ...transaction,
+    const { type, ...data } = transaction;
+    const collectionName = type === 'income' ? 'incomes' : 'expenses';
+    addDocumentNonBlocking(collection(firestore, `users/${user.uid}/${collectionName}`), {
+      ...data,
       userId: user.uid,
     });
   };
   
   const addCategory = async (category: Omit<Category, 'id' | 'userId'>) => {
     if (!user) return;
-    await addDoc(collection(firestore, `users/${user.uid}/categories`), {
+    addDocumentNonBlocking(collection(firestore, `users/${user.uid}/categories`), {
       ...category,
       userId: user.uid,
     });
@@ -75,12 +88,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const updateCategory = async (updatedCategory: Category) => {
     if (!user) return;
     const { id, ...data } = updatedCategory;
-    await updateDoc(doc(firestore, `users/${user.uid}/categories`, id), data);
+    updateDocumentNonBlocking(doc(firestore, `users/${user.uid}/categories`, id), data);
   };
   
   const deleteCategory = async (id: string) => {
     if (!user) return;
-    await deleteDoc(doc(firestore, `users/${user.uid}/categories`, id));
+    deleteDocumentNonBlocking(doc(firestore, `users/${user.uid}/categories`, id));
   };
 
   const value = {
