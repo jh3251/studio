@@ -1,0 +1,221 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the BalanceWise application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "Expense": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expense",
+      "type": "object",
+      "description": "Represents an expense recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the expense."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who recorded the expense. (Relationship: User 1:N Expense)"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the Category of the expense. (Relationship: Category 1:N Expense)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the expense.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the expense."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the expense."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "categoryId",
+        "date",
+        "amount"
+      ]
+    },
+    "Income": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Income",
+      "type": "object",
+      "description": "Represents an income recorded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the income."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who recorded the income. (Relationship: User 1:N Income)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the income.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the income."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the income."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "amount"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created the category. (Relationship: User 1:N Category)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  No denormalization is required as this collection is only used to store user data and is secured by Firebase Authentication.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, obtained from Firebase Authentication."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores expense categories created by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, obtained from Firebase Authentication."
+            },
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/expenses/{expenseId}",
+        "definition": {
+          "entityName": "Expense",
+          "schema": {
+            "$ref": "#/backend/entities/Expense"
+          },
+          "description": "Stores expense records created by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, obtained from Firebase Authentication."
+            },
+            {
+              "name": "expenseId",
+              "description": "The unique identifier for the expense."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/incomes/{incomeId}",
+        "definition": {
+          "entityName": "Income",
+          "schema": {
+            "$ref": "#/backend/entities/Income"
+          },
+          "description": "Stores income records created by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, obtained from Firebase Authentication."
+            },
+            {
+              "name": "incomeId",
+              "description": "The unique identifier for the income."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, support required QAPs (Queries and Permissions), and maintain data clarity.  Authorization Independence is achieved by structuring data around user-owned subcollections, eliminating the need for `get()` calls in security rules. Each user has their own collections for categories, expenses and incomes. This segregation inherently supports QAPs, as listing operations are scoped to a user's data. This allows us to make rules simple since we can securely assume ownership based on the collection path.  There is no collaborative data for this app, so a membership map is not needed."
+  }
+}
