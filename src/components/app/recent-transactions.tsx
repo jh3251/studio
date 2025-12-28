@@ -153,7 +153,7 @@ export function RecentTransactions() {
                     sortedTransactions.map(t => (
                         <TableRow key={t.id}>
                         <TableCell>
-                            <div className="font-medium">{t.userName}</div>
+                            <div className="font-bold text-lg">{t.userName}</div>
                             <div className="text-sm text-muted-foreground md:hidden">
                                 {new Date(t.date).toLocaleDateString()}
                             </div>
