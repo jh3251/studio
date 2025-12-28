@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Loader2, Eraser } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,12 +22,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
   const { toast } = useToast();
 
   const handleEdit = (transaction: Transaction) => {
@@ -51,6 +65,37 @@ export function RecentTransactions() {
       });
     }
   };
+
+  const handleClearAll = async () => {
+    if (password !== '12345') {
+      toast({
+        variant: "destructive",
+        title: "Incorrect Password",
+        description: "The password you entered is incorrect. Data was not cleared.",
+      });
+      return;
+    }
+    setIsClearing(true);
+    try {
+      await clearAllTransactions();
+      toast({
+        title: 'All Data Cleared',
+        description: 'All transaction history has been permanently deleted.',
+        variant: 'destructive',
+      });
+      setIsClearAllDialogOpen(false);
+      setPassword('');
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not clear all transactions.",
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
 
   const handleSheetOpenChange = (isOpen: boolean) => {
     setIsSheetOpen(isOpen);
@@ -151,12 +196,50 @@ export function RecentTransactions() {
             </Table>
           </ScrollArea>
         </CardContent>
+         <CardFooter className="justify-end">
+          <Button variant="destructive" onClick={() => setIsClearAllDialogOpen(true)} disabled={transactions.length === 0}>
+            <Eraser className="mr-2 h-4 w-4" /> Clear All Data
+          </Button>
+        </CardFooter>
       </Card>
+      
       <AddTransactionSheet 
         isOpen={isSheetOpen} 
         onOpenChange={handleSheetOpenChange}
         transactionToEdit={editingTransaction}
       />
+
+      <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear All Transaction Data</DialogTitle>
+            <DialogDescription>
+              This is a destructive action and cannot be undone. To confirm, please enter the password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2 pb-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password"
+                placeholder="Enter password to confirm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleClearAll} disabled={isClearing}>
+              {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete All Data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
