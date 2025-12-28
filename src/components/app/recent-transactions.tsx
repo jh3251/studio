@@ -160,9 +160,9 @@ export function RecentTransactions() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                             {t.type === 'expense' ? (
-                                <Badge variant="outline">{getCategoryName(t.categoryId)}</Badge>
+                                <Badge variant="outline" className="text-red-600 border-red-600/40">{getCategoryName(t.categoryId)}</Badge>
                             ) : (
-                                <Badge variant="secondary">Cash In</Badge>
+                                <Badge variant="outline" className="text-green-600 border-green-600/40">Cash In</Badge>
                             )}
                              <div className="text-xs text-muted-foreground mt-1">
                                 {new Date(t.date).toLocaleDateString()}
