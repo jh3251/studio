@@ -50,7 +50,7 @@ export function SidebarNav() {
         <div className="flex items-center justify-center p-2 rounded-lg bg-primary text-primary-foreground">
           <Scale className="w-6 h-6" />
         </div>
-        <span className="text-lg font-semibold font-headline">BalanceWise</span>
+        <span className="text-lg font-semibold font-headline">SumBook</span>
       </div>
       <div className="flex-1 px-4">
         <SidebarMenu>

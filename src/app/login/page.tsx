@@ -77,7 +77,7 @@ export default function LoginPage() {
             <div className="flex items-center justify-center p-2 rounded-lg bg-primary text-primary-foreground">
                 <Scale className="w-8 h-8" />
             </div>
-            <h1 className="text-4xl font-bold font-headline text-primary">BalanceWise</h1>
+            <h1 className="text-4xl font-bold font-headline text-primary">SumBook</h1>
         </div>
 
         <p className="text-center text-lg text-muted-foreground">

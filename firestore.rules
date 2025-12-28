@@ -1,5 +1,5 @@
 /**
- * This ruleset enforces a strict user-ownership security model for the BalanceWise app.
+ * This ruleset enforces a strict user-ownership security model for the SumBook app.
  *
  * Core Philosophy:
  * All user data is private and can only be accessed by the user who created it. There is

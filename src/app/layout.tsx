@@ -5,7 +5,7 @@ import { AppProvider } from '@/context/app-context';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'BalanceWise',
+  title: 'SumBook',
   description: 'Track your income and expenses with ease.',
 };
 
