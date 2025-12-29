@@ -61,6 +61,7 @@ service cloud.firestore {
     // Admins can create roles for others. Users can manage their own role doc.
     match /user_roles/{uid} {
       allow read, update: if request.auth.uid == uid;
+      // Allow create if the request is from an admin OR the user is creating their own doc (first signup)
       allow create: if isAdmin() || request.auth.uid == uid;
       // Deletion might be restricted in a real app to prevent self-lockout
       allow delete: if false; 
@@ -75,25 +76,27 @@ service cloud.firestore {
       // --- Stores ---
       // An admin can manage their own stores. A store user can read their assigned store doc.
       match /stores/{storeId} {
-        allow list, create, update, delete: if isOwner(adminId);
+        // An admin can create, update, delete, and list their own stores.
+        allow create, update, delete, list: if isOwner(adminId);
+        // A store user can also read the document of the store they are assigned to.
         allow get: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
 
         // --- Store-Owned Subcollections ---
         // These rules grant access to either the owning admin or the assigned store user.
         match /app_users/{appUserId} {
-          allow read, list, create, update, delete: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
+          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
         }
 
         match /categories/{categoryId} {
-          allow read, list, create, update, delete: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
+          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
         }
 
         match /expenses/{expenseId} {
-          allow read, list, create, update, delete: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
+          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
         }
 
         match /incomes/{incomeId} {
-           allow read, list, create, update, delete: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
+           allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
         }
       }
     }
