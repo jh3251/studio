@@ -173,8 +173,7 @@ export function RecentTransactions() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Transactions</CardTitle>
+          <div className="flex items-center justify-end">
             {sortedTransactions.length > 0 && (
               <div className="flex items-center gap-2">
                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
