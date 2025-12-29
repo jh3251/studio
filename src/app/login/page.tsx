@@ -41,32 +41,38 @@ export default function LoginPage() {
     setIsSigningIn(true);
 
     try {
-      // First, try to sign in.
+      // First, try to sign in. This handles existing admins and store users.
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       const authError = error as AuthError;
+
+      // If the user doesn't exist, we'll try to create them.
+      // This is the flow for creating the very first admin user.
       if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-        // If user does not exist, this might be the very first sign-in attempt
-        // for an admin user. We'll create the account.
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
             
-            // IMPORTANT: Assign 'admin' role to the first user.
-            // In a real app, you'd have a more secure way to assign admins.
-            // For this prototype, we assume the first person to sign up is the admin.
-            const roleRef = doc(firestore, 'user_roles', newUser.uid);
-            await setDoc(roleRef, { role: 'admin', uid: newUser.uid });
-
-        } catch (createError) {
-            const createAuthError = createError as AuthError;
-            console.error('Error creating user:', createAuthError);
+            // If the user's email is 'admin@example.com', explicitly make them an admin.
+            // Otherwise, this flow is only for the first admin, not for creating store users.
+            if (email.toLowerCase() === 'admin@example.com') {
+                const roleRef = doc(firestore, 'user_roles', newUser.uid);
+                await setDoc(roleRef, { role: 'admin', uid: newUser.uid });
+            } else {
+                // If it's not the designated admin email, we assume it's a store user,
+                // but store users should be created via the admin's 'Stores' page, not here.
+                // So, we show an error.
+                throw new Error("This account does not exist. Store users must be created by an administrator.");
+            }
+        } catch (createError: any) {
+            console.error('Error during sign-up attempt:', createError);
             toast({
                 variant: "destructive",
                 title: "Sign-up Failed",
-                description: createAuthError.message || "Could not create a new account.",
+                description: createError.message || "Could not create a new account. Only the primary admin can sign up here.",
             });
-            setIsSigningIn(false);
+        } finally {
+             setIsSigningIn(false);
         }
       } else {
         // Handle other sign-in errors
@@ -79,7 +85,7 @@ export default function LoginPage() {
         setIsSigningIn(false);
       }
     }
-    // Let the onAuthStateChanged listener and AppContext handle the redirect and role logic.
+    // Don't set isSigningIn to false here; let the redirect handle it.
   };
 
   if (isUserLoading || user) {
