@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { Wallet, User as UserIcon, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,40 +8,8 @@ import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 
 export function BalanceDisplay() {
-  const { transactions, users, loading, activeStore, currency } = useAppContext();
-
-  const { totalIncome, totalExpense, userBalances } = useMemo(() => {
-    if (!activeStore) return { totalIncome: 0, totalExpense: 0, userBalances: [] };
-      
-    let totalIncome = 0;
-    let totalExpense = 0;
-    const userBalanceMap = new Map<string, { income: number; expense: number }>();
-    
-    const currentStoreUsers = users.filter(u => u.storeId === activeStore.id);
-    currentStoreUsers.forEach(user => {
-        userBalanceMap.set(user.name, { income: 0, expense: 0 });
-    });
-
-    const currentStoreTransactions = transactions.filter(t => t.storeId === activeStore.id);
-    currentStoreTransactions.forEach(t => {
-      if (t.type === 'income') {
-        totalIncome += t.amount;
-        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
-        userBalanceMap.set(t.userName, { ...currentUser, income: currentUser.income + t.amount });
-      } else {
-        totalExpense += t.amount;
-        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
-        userBalanceMap.set(t.userName, { ...currentUser, expense: currentUser.expense + t.amount });
-      }
-    });
-
-    const userBalances = Array.from(userBalanceMap.entries()).map(([name, { income, expense }]) => ({
-      name,
-      balance: income - expense,
-    }));
-
-    return { totalIncome, totalExpense, userBalances };
-  }, [transactions, users, activeStore]);
+  const { loading, activeStore, currency, financialSummary } = useAppContext();
+  const { totalIncome, totalExpense, totalBalance, userBalances } = financialSummary;
 
   const formatCurrency = (amount: number) => {
     if (currency === 'BDT') {
@@ -91,7 +58,7 @@ export function BalanceDisplay() {
             <Wallet className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatCurrency(totalIncome - totalExpense)}</div>
+            <div className="text-2xl font-bold text-primary">{formatCurrency(totalBalance)}</div>
             </CardContent>
         </Card>
         <Card>

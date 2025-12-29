@@ -12,6 +12,13 @@ import {
   setDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
 
+interface FinancialSummary {
+  totalIncome: number;
+  totalExpense: number;
+  totalBalance: number;
+  userBalances: { name: string; balance: number }[];
+}
+
 interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
@@ -19,6 +26,7 @@ interface AppContextType {
   stores: Store[];
   activeStore: Store | null;
   currency: string;
+  financialSummary: FinancialSummary;
   setCurrency: (currency: string) => Promise<void>;
   setActiveStore: (store: Store | null) => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => Promise<void>;
@@ -66,6 +74,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(ACTIVE_STORE_LS_KEY);
     }
   };
+
+  const financialSummary = useMemo<FinancialSummary>(() => {
+    if (!activeStore) return { totalIncome: 0, totalExpense: 0, totalBalance: 0, userBalances: [] };
+      
+    let totalIncome = 0;
+    let totalExpense = 0;
+    const userBalanceMap = new Map<string, { income: number; expense: number }>();
+    
+    const currentStoreUsers = users.filter(u => u.storeId === activeStore.id);
+    currentStoreUsers.forEach(user => {
+        userBalanceMap.set(user.name, { income: 0, expense: 0 });
+    });
+
+    const currentStoreTransactions = transactions.filter(t => t.storeId === activeStore.id);
+    currentStoreTransactions.forEach(t => {
+      if (t.type === 'income') {
+        totalIncome += t.amount;
+        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
+        userBalanceMap.set(t.userName, { ...currentUser, income: currentUser.income + t.amount });
+      } else {
+        totalExpense += t.amount;
+        const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
+        userBalanceMap.set(t.userName, { ...currentUser, expense: currentUser.expense + t.amount });
+      }
+    });
+
+    const userBalances = Array.from(userBalanceMap.entries()).map(([name, { income, expense }]) => ({
+      name,
+      balance: income - expense,
+    }));
+
+    return { totalIncome, totalExpense, totalBalance: totalIncome - totalExpense, userBalances };
+  }, [transactions, users, activeStore]);
+
 
   const setCurrency = useCallback(async (newCurrency: string) => {
     if (!authUser || !firestore) return;
@@ -210,7 +252,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Effect for user-level data (stores, preferences)
   useEffect(() => {
     if (!authUser || !firestore) {
-      // Not logged in, clear all state
       setTransactions([]);
       setCategories([]);
       setUsers([]);
@@ -251,12 +292,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authUser, firestore, activeStore?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, firestore]);
 
 
   // Effect for fetching data related to the active store
   useEffect(() => {
-    if (!activeStore || !firestore) {
+    if (!activeStore || !firestore || !authUser) {
       setTransactions([]);
       setCategories([]);
       setUsers([]);
@@ -266,8 +308,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    setLoading(true);
     const unsubscribes: (() => void)[] = [];
-    const storePath = `users/${activeStore.userId}/stores/${activeStore.id}`;
+    const storePath = `users/${authUser.uid}/stores/${activeStore.id}`;
 
     const expensesQuery = query(collection(firestore, `${storePath}/expenses`));
     const incomesQuery = query(collection(firestore, `${storePath}/incomes`));
@@ -299,8 +342,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
     }));
     
+    setLoading(false);
+
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [activeStore, firestore]);
+  }, [activeStore, firestore, authUser, stores.length]);
 
   const value = useMemo(() => ({
     transactions,
@@ -309,6 +354,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     stores,
     activeStore,
     currency,
+    financialSummary,
     setCurrency,
     setActiveStore,
     addTransaction,
@@ -335,6 +381,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     stores,
     activeStore,
     currency,
+    financialSummary,
     loading,
     setCurrency,
     addTransaction,

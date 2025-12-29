@@ -43,7 +43,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore, currency } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore, currency, financialSummary } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -136,12 +136,62 @@ export function RecentTransactions() {
     const doc = new jsPDF();
     const title = `Transaction Report for ${activeStore.name}`;
     const date = `Generated on: ${new Date().toLocaleDateString()}`;
+    let finalY = 0;
 
     doc.setFontSize(18);
     doc.text(title, 14, 22);
     doc.setFontSize(11);
     doc.text(date, 14, 30);
+    
+    // Summary Section
+    doc.setFontSize(14);
+    doc.text("Financial Summary", 14, 40);
+    
+    const summaryBody: (string|number)[][] = [
+      ["Total Balance", formatCurrency(financialSummary.totalBalance)],
+      ["Total Cash In", formatCurrency(financialSummary.totalIncome)],
+      ["Total Cash Out", formatCurrency(financialSummary.totalExpense)],
+    ];
 
+    autoTable(doc, {
+      body: summaryBody,
+      startY: 45,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnStyles: {
+        0: { fontStyle: 'bold' },
+        1: { halign: 'right' }
+      }
+    });
+
+    finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    // User Balances
+    if (financialSummary.userBalances.length > 0) {
+      doc.setFontSize(14);
+      doc.text("User Balances", 14, finalY);
+      
+      const userBalanceBody = financialSummary.userBalances.map(ub => [
+        ub.name,
+        formatCurrency(ub.balance),
+      ]);
+
+      autoTable(doc, {
+        head: [["User", "Balance"]],
+        body: userBalanceBody,
+        startY: finalY + 5,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185] }, // A blue color
+        styles: { fontSize: 10, cellPadding: 2 },
+        columnStyles: {
+          1: { halign: 'right' }
+        }
+      });
+      finalY = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+
+    // Transaction Table
     const tableColumn = ["Date", "User", "Details", "Amount"];
     const tableRows: (string|number)[][] = [];
 
@@ -154,11 +204,14 @@ export function RecentTransactions() {
       ];
       tableRows.push(transactionData);
     });
+    
+    doc.setFontSize(14);
+    doc.text("Transaction History", 14, finalY);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 35,
+      startY: finalY + 5,
       headStyles: { fillColor: [22, 163, 74] }, // Green color for header
       styles: { halign: 'center' },
       columnStyles: {
