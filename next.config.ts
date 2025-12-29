@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
   async headers() {
@@ -36,8 +42,8 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'ALLOW-FROM *', // More permissive, use with caution
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors *",
           },
         ],
       },
