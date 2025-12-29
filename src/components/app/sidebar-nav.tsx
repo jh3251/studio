@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ import { SumbookIcon } from '../icons/sumbook-icon';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/stores', icon: StoreIcon, label: 'Stores' },
   { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/users', icon: Users, label: 'Users' },
 ];

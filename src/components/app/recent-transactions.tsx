@@ -41,7 +41,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -120,7 +120,11 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedTransactions = activeStore 
+    ? [...transactions]
+        .filter(t => t.storeId === activeStore.id)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
 
   return (
     <>
@@ -128,7 +132,7 @@ export function RecentTransactions() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Recent Transactions</CardTitle>
-            {transactions.length > 0 && (
+            {sortedTransactions.length > 0 && (
                <Button variant="outline" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
                 <Eraser className="mr-2 h-4 w-4" /> Clear All
               </Button>
@@ -149,7 +153,13 @@ export function RecentTransactions() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {sortedTransactions.length > 0 ? (
+                    {!activeStore ? (
+                        <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                            Please select a store to see transactions.
+                            </TableCell>
+                        </TableRow>
+                    ) : sortedTransactions.length > 0 ? (
                     sortedTransactions.map(t => (
                         <TableRow key={t.id}>
                         <TableCell>
@@ -218,7 +228,7 @@ export function RecentTransactions() {
                     ) : (
                     <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">
-                        No transactions yet.
+                        No transactions yet for this store.
                         </TableCell>
                     </TableRow>
                     )}
@@ -237,7 +247,7 @@ export function RecentTransactions() {
       <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Clear All Transaction Data</DialogTitle>
+            <DialogTitle>Clear All Transaction Data for this Store</DialogTitle>
             <DialogDescription>
               This is a destructive action and cannot be undone. To confirm, please enter the password '12345'.
             </DialogDescription>

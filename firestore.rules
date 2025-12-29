@@ -13,6 +13,7 @@ service cloud.firestore {
     }
 
     // Rules for all data nested under a user document.
+    // This gives a user full access to their own document tree.
     match /users/{userId}/{path=**} {
       allow read, write: if isOwner(userId);
     }

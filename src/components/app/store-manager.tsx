@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { PlusCircle, Edit, Trash2, Loader2, User as UserIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Store as StoreIcon } from 'lucide-react';
 
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -39,67 +39,61 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '../ui/skeleton';
-import { User } from '@/lib/types';
+import { Store } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
-const userSchema = z.object({
-  name: z.string().min(2, { message: 'User name must be at least 2 characters.' }),
+const storeSchema = z.object({
+  name: z.string().min(2, { message: 'Store name must be at least 2 characters.' }),
 });
-type UserFormValues = z.infer<typeof userSchema>;
+type StoreFormValues = z.infer<typeof storeSchema>;
 
 
-export function UserManager() {
-  const { users, addUser, updateUser, deleteUser, loading, activeStore } = useAppContext();
+export function StoreManager() {
+  const { stores, addStore, updateStore, deleteStore, loading, setActiveStore } = useAppContext();
   const { toast } = useToast();
+  const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingStore, setEditingStore] = useState<Store | null>(null);
 
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userSchema),
+  const form = useForm<StoreFormValues>({
+    resolver: zodResolver(storeSchema),
   });
 
-  const handleDialogOpen = (user: User | null) => {
-    if (!activeStore) {
-        toast({
-            variant: "destructive",
-            title: "No active store",
-            description: "Please create or select a store first.",
-        });
-        return;
-    }
-    setEditingUser(user);
-    form.reset(user ? { name: user.name } : { name: '' });
+  const handleDialogOpen = (store: Store | null) => {
+    setEditingStore(store);
+    form.reset(store ? { name: store.name } : { name: '' });
     setIsDialogOpen(true);
   };
 
-  const onSubmit = async (data: UserFormValues) => {
+  const onSubmit = async (data: StoreFormValues) => {
     try {
-      if (editingUser) {
-        await updateUser({ id: editingUser.id, ...data });
-        toast({ title: 'User Updated', description: `User "${data.name}" has been updated.` });
+      if (editingStore) {
+        await updateStore({ id: editingStore.id, ...data });
+        toast({ title: 'Store Updated', description: `Store "${data.name}" has been updated.` });
       } else {
-        await addUser(data);
-        toast({ title: 'User Added', description: `User "${data.name}" has been added.` });
+        await addStore(data);
+        toast({ title: 'Store Added', description: `Store "${data.name}" has been added.` });
       }
       setIsDialogOpen(false);
-      setEditingUser(null);
+      setEditingStore(null);
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "Could not save user.",
+        description: "Could not save store.",
       });
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteUser(id);
-      toast({ title: 'User Deleted', variant: 'destructive' });
+      await deleteStore(id);
+      toast({ title: 'Store Deleted', variant: 'destructive' });
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "Could not delete user.",
+        description: "Could not delete store.",
       });
     }
   };
@@ -119,37 +113,38 @@ export function UserManager() {
           </Card>
       );
   }
-  
-  const currentStoreUsers = activeStore ? users.filter(u => u.storeId === activeStore.id) : [];
+
+  const handleSelectStore = (store: Store) => {
+    setActiveStore(store);
+    router.push('/dashboard');
+  }
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
             <div>
-                <CardTitle>Your Users</CardTitle>
-                <CardDescription>Manage the users for your transactions.</CardDescription>
+                <CardTitle>Your Stores</CardTitle>
+                <CardDescription>Manage the stores for your finances.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add User
+            <Button onClick={() => handleDialogOpen(null)}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Store
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {!activeStore ? (
-            <div className="text-center text-muted-foreground py-16">
-                <p className="font-medium">No store selected.</p>
-                <p className="text-sm mt-1">Please select a store to manage its users.</p>
-            </div>
-        ) : currentStoreUsers.length > 0 ? (
+        {stores.length > 0 ? (
           <ul className="space-y-3">
-            {currentStoreUsers.map((user) => {
+            {stores.map((store) => {
               return (
-                <li key={user.id} className="flex items-center gap-4 rounded-lg border p-4">
-                  <UserIcon className="h-6 w-6 text-muted-foreground" />
-                  <span className="flex-1 font-medium">{user.name}</span>
+                <li key={store.id} className="flex items-center gap-4 rounded-lg border p-4">
+                  <StoreIcon className="h-6 w-6 text-muted-foreground" />
+                  <span className="flex-1 font-medium">{store.name}</span>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(user)}>
+                    <Button variant="outline" size="sm" onClick={() => handleSelectStore(store)}>
+                        Go to Store
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(store)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
@@ -162,12 +157,12 @@ export function UserManager() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the user and may affect transactions associated with it.
+                            This action cannot be undone. This will permanently delete the store and all associated data (transactions, users, categories).
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(user.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleDelete(store.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -178,8 +173,8 @@ export function UserManager() {
           </ul>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <p className="font-medium">No users found for this store.</p>
-            <p className="text-sm mt-1">Add your first user to get started.</p>
+            <p className="font-medium">No stores found.</p>
+            <p className="text-sm mt-1">Add your first store to get started.</p>
           </div>
         )}
       </CardContent>
@@ -187,9 +182,9 @@ export function UserManager() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{editingUser ? 'Edit' : 'Add'} User</DialogTitle>
+                    <DialogTitle>{editingStore ? 'Edit' : 'Add'} Store</DialogTitle>
                     <DialogDescription>
-                        {editingUser ? 'Update the details for your user.' : 'Create a new user for your transactions.'}
+                        {editingStore ? 'Update the details for your store.' : 'Create a new store to track finances separately.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -199,9 +194,9 @@ export function UserManager() {
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>User Name</FormLabel>
+                                    <FormLabel>Store Name</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g., John Doe" {...field} />
+                                        <Input placeholder="e.g., Personal Finances" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -213,7 +208,7 @@ export function UserManager() {
                             </DialogClose>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
                                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {editingUser ? 'Save Changes' : 'Create User'}
+                                {editingStore ? 'Save Changes' : 'Create Store'}
                             </Button>
                         </DialogFooter>
                     </form>

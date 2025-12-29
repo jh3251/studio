@@ -68,7 +68,7 @@ const getIconComponent = (iconName: IconName | string | undefined) => {
 };
 
 export function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory, loading } = useAppContext();
+  const { categories, addCategory, updateCategory, deleteCategory, loading, activeStore } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -78,6 +78,14 @@ export function CategoryManager() {
   });
 
   const handleDialogOpen = (category: Category | null) => {
+    if (!activeStore) {
+        toast({
+            variant: "destructive",
+            title: "No active store",
+            description: "Please create or select a store first.",
+        });
+        return;
+    }
     setEditingCategory(category);
     form.reset(category ? { name: category.name, icon: category.icon as IconName } : { name: '', icon: 'ShoppingCart' });
     setIsDialogOpen(true);
@@ -132,6 +140,8 @@ export function CategoryManager() {
       );
   }
 
+  const currentStoreCategories = activeStore ? categories.filter(c => c.storeId === activeStore.id) : [];
+
   return (
     <Card>
       <CardHeader>
@@ -140,15 +150,20 @@ export function CategoryManager() {
                 <CardTitle>Your Categories</CardTitle>
                 <CardDescription>Manage the categories for your transactions.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)}>
+            <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Category
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {categories.length > 0 ? (
+        {!activeStore ? (
+            <div className="text-center text-muted-foreground py-16">
+                <p className="font-medium">No store selected.</p>
+                <p className="text-sm mt-1">Please select a store to manage its categories.</p>
+            </div>
+        ) : currentStoreCategories.length > 0 ? (
           <ul className="space-y-3">
-            {categories.map((category) => {
+            {currentStoreCategories.map((category) => {
               const IconComponent = getIconComponent(category.icon);
               return (
                 <li key={category.id} className="flex items-center gap-4 rounded-lg border p-4">
@@ -184,7 +199,7 @@ export function CategoryManager() {
           </ul>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <p className="font-medium">No categories found.</p>
+            <p className="font-medium">No categories found for this store.</p>
             <p className="text-sm mt-1">Add your first category to get started.</p>
           </div>
         )}

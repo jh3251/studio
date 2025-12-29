@@ -7,18 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function BalanceDisplay() {
-  const { transactions, users, loading } = useAppContext();
+  const { transactions, users, loading, activeStore } = useAppContext();
 
   const { totalIncome, totalExpense, userBalances } = useMemo(() => {
+    if (!activeStore) return { totalIncome: 0, totalExpense: 0, userBalances: [] };
+      
     let totalIncome = 0;
     let totalExpense = 0;
     const userBalanceMap = new Map<string, { income: number; expense: number }>();
-
-    users.forEach(user => {
+    
+    const currentStoreUsers = users.filter(u => u.storeId === activeStore.id);
+    currentStoreUsers.forEach(user => {
         userBalanceMap.set(user.name, { income: 0, expense: 0 });
     });
 
-    transactions.forEach(t => {
+    const currentStoreTransactions = transactions.filter(t => t.storeId === activeStore.id);
+    currentStoreTransactions.forEach(t => {
       if (t.type === 'income') {
         totalIncome += t.amount;
         const currentUser = userBalanceMap.get(t.userName) || { income: 0, expense: 0 };
@@ -36,7 +40,7 @@ export function BalanceDisplay() {
     }));
 
     return { totalIncome, totalExpense, userBalances };
-  }, [transactions, users]);
+  }, [transactions, users, activeStore]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -45,7 +49,7 @@ export function BalanceDisplay() {
     }).format(amount);
   };
 
-  if (loading) {
+  if (loading && !activeStore) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-[126px]" />
@@ -53,6 +57,19 @@ export function BalanceDisplay() {
             <Skeleton className="h-[126px] col-span-1 md:col-span-2" />
         </div>
     )
+  }
+
+  if (!activeStore) {
+      return (
+        <Card className="col-span-full">
+            <CardHeader>
+                <CardTitle>No Store Selected</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">Please create or select a store to view its balance.</p>
+            </CardContent>
+        </Card>
+      )
   }
 
   return (

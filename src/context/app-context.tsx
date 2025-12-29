@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs, query } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
-import type { Transaction, Category, User as AppUser, TransactionType } from '@/lib/types';
+import type { Transaction, Category, User as AppUser, TransactionType, Store } from '@/lib/types';
 import {
   updateDocumentNonBlocking,
   deleteDocumentNonBlocking,
@@ -15,59 +15,79 @@ interface AppContextType {
   transactions: Transaction[];
   categories: Category[];
   users: AppUser[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
-  updateTransaction: (transaction: Omit<Transaction, 'userId'>) => Promise<void>;
+  stores: Store[];
+  activeStore: Store | null;
+  setActiveStore: (store: Store | null) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => Promise<void>;
+  updateTransaction: (transaction: Omit<Transaction, 'userId' | 'storeId'>) => Promise<void>;
   deleteTransaction: (transactionId: string, type: TransactionType) => Promise<void>;
   clearAllTransactions: () => Promise<void>;
-  addCategory: (category: Omit<Category, 'id' | 'userId'>) => Promise<void>;
-  updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId'>>) => Promise<void>;
+  addCategory: (category: Omit<Category, 'id' | 'userId' | 'storeId'>) => Promise<void>;
+  updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId' | 'storeId'>>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  addUser: (user: Omit<AppUser, 'id' | 'userId'>) => Promise<void>;
-  updateUser: (user: Pick<AppUser, 'id'> & Partial<Omit<AppUser, 'id' | 'userId'>>) => Promise<void>;
+  addUser: (user: Omit<AppUser, 'id' | 'userId' | 'storeId'>) => Promise<void>;
+  updateUser: (user: Pick<AppUser, 'id'> & Partial<Omit<AppUser, 'id' | 'userId' | 'storeId'>>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  addStore: (store: Omit<Store, 'id' | 'userId'>) => Promise<void>;
+  updateStore: (store: Pick<Store, 'id'> & Partial<Omit<Store, 'id' | 'userId'>>) => Promise<void>;
+  deleteStore: (id: string) => Promise<void>;
   loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const ACTIVE_STORE_LS_KEY = 'activeStoreId';
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [activeStore, setActiveStoreState] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   
   const firestore = useFirestore();
   const { user: authUser } = useUser();
 
-  const basePath = authUser ? `users/${authUser.uid}` : null;
+  const setActiveStore = (store: Store | null) => {
+    setActiveStoreState(store);
+    if (store) {
+      localStorage.setItem(ACTIVE_STORE_LS_KEY, store.id);
+    } else {
+      localStorage.removeItem(ACTIVE_STORE_LS_KEY);
+    }
+  };
 
-  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
-    if (!basePath) return;
+  const basePath = authUser ? `users/${authUser.uid}` : null;
+  const storePath = activeStore ? `${basePath}/stores/${activeStore.id}` : null;
+
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => {
+    if (!storePath || !activeStore) return;
     const { type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    const coll = collection(firestore, `${basePath}/${collectionName}`);
-    await addDocumentNonBlocking(coll, { ...data, userId: authUser!.uid });
-  }, [basePath, firestore, authUser]);
+    const coll = collection(firestore, `${storePath}/${collectionName}`);
+    await addDocumentNonBlocking(coll, { ...data, userId: authUser!.uid, storeId: activeStore.id });
+  }, [storePath, firestore, authUser, activeStore]);
 
-  const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'>) => {
-    if (!basePath) return;
+  const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId' | 'storeId'>) => {
+    if (!storePath) return;
     const { id, type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
+    const docRef = doc(firestore, `${storePath}/${collectionName}`, id);
     updateDocumentNonBlocking(docRef, data);
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
   
   const deleteTransaction = useCallback(async (transactionId: string, type: TransactionType) => {
-    if (!basePath) return;
+    if (!storePath) return;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    const docRef = doc(firestore, `${basePath}/${collectionName}`, transactionId);
+    const docRef = doc(firestore, `${storePath}/${collectionName}`, transactionId);
     deleteDocumentNonBlocking(docRef);
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
 
   const clearAllTransactions = useCallback(async () => {
-    if (!basePath) return;
-    const incomesRef = collection(firestore, `${basePath}/incomes`);
-    const expensesRef = collection(firestore, `${basePath}/expenses`);
+    if (!storePath) return;
+    const incomesRef = collection(firestore, `${storePath}/incomes`);
+    const expensesRef = collection(firestore, `${storePath}/expenses`);
 
     const incomesSnap = await getDocs(incomesRef);
     const expensesSnap = await getDocs(expensesRef);
@@ -76,93 +96,156 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     incomesSnap.forEach(d => batch.delete(d.ref));
     expensesSnap.forEach(d => batch.delete(d.ref));
     await batch.commit();
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
   
-  const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId'>) => {
-    if (!basePath) return;
-    const coll = collection(firestore, `${basePath}/categories`);
-    await addDocumentNonBlocking(coll, { ...category, userId: authUser!.uid });
-  }, [basePath, firestore, authUser]);
+  const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId' | 'storeId'>) => {
+    if (!storePath || !activeStore) return;
+    const coll = collection(firestore, `${storePath}/categories`);
+    await addDocumentNonBlocking(coll, { ...category, userId: authUser!.uid, storeId: activeStore.id });
+  }, [storePath, firestore, authUser, activeStore]);
   
-  const updateCategory = useCallback(async (updatedCategory: Pick<Category, 'id'> & Partial<Omit<Category, 'id'|'userId'>>) => {
-    if (!basePath) return;
+  const updateCategory = useCallback(async (updatedCategory: Pick<Category, 'id'> & Partial<Omit<Category, 'id'|'userId'|'storeId'>>) => {
+    if (!storePath) return;
     const { id, ...data } = updatedCategory;
-    const docRef = doc(firestore, `${basePath}/categories`, id);
+    const docRef = doc(firestore, `${storePath}/categories`, id);
     updateDocumentNonBlocking(docRef, data);
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
   
   const deleteCategory = useCallback(async (id: string) => {
-    if (!basePath) return;
-    const docRef = doc(firestore, `${basePath}/categories`, id);
+    if (!storePath) return;
+    const docRef = doc(firestore, `${storePath}/categories`, id);
     deleteDocumentNonBlocking(docRef);
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
   
-  const addUser = useCallback(async (user: Omit<AppUser, 'id' | 'userId'>) => {
-    if (!basePath) return;
-    const coll = collection(firestore, `${basePath}/app_users`);
-    await addDocumentNonBlocking(coll, { ...user, userId: authUser!.uid });
-  }, [basePath, firestore, authUser]);
+  const addUser = useCallback(async (user: Omit<AppUser, 'id' | 'userId' | 'storeId'>) => {
+    if (!storePath || !activeStore) return;
+    const coll = collection(firestore, `${storePath}/app_users`);
+    await addDocumentNonBlocking(coll, { ...user, userId: authUser!.uid, storeId: activeStore.id });
+  }, [storePath, firestore, authUser, activeStore]);
   
-  const updateUser = useCallback(async (updatedUser: Pick<AppUser, 'id'> & Partial<Omit<AppUser, 'id'|'userId'>>) => {
-    if (!basePath) return;
+  const updateUser = useCallback(async (updatedUser: Pick<AppUser, 'id'> & Partial<Omit<AppUser, 'id'|'userId'|'storeId'>>) => {
+    if (!storePath) return;
     const { id, ...data } = updatedUser;
-    const docRef = doc(firestore, `${basePath}/app_users`, id);
+    const docRef = doc(firestore, `${storePath}/app_users`, id);
     updateDocumentNonBlocking(docRef, data);
-  }, [basePath, firestore]);
+  }, [storePath, firestore]);
   
   const deleteUser = useCallback(async (id: string) => {
+    if (!storePath) return;
+    const docRef = doc(firestore, `${storePath}/app_users`, id);
+    deleteDocumentNonBlocking(docRef);
+  }, [storePath, firestore]);
+
+  const addStore = useCallback(async (store: Omit<Store, 'id' | 'userId'>) => {
     if (!basePath) return;
-    const docRef = doc(firestore, `${basePath}/app_users`, id);
+    const coll = collection(firestore, `${basePath}/stores`);
+    await addDocumentNonBlocking(coll, { ...store, userId: authUser!.uid });
+  }, [basePath, firestore, authUser]);
+
+  const updateStore = useCallback(async (store: Pick<Store, 'id'> & Partial<Omit<Store, 'id' | 'userId'>>) => {
+    if (!basePath) return;
+    const { id, ...data } = store;
+    const docRef = doc(firestore, `${basePath}/stores`, id);
+    updateDocumentNonBlocking(docRef, data);
+  }, [basePath, firestore]);
+
+  const deleteStore = useCallback(async (id: string) => {
+    if (!basePath) return;
+    const docRef = doc(firestore, `${basePath}/stores`, id);
     deleteDocumentNonBlocking(docRef);
   }, [basePath, firestore]);
 
 
-  // Effect for fetching data
+  // Effect for fetching stores and setting initial active store
   useEffect(() => {
     if (authUser && firestore) {
-      const currentBasePath = `users/${authUser.uid}`;
       setLoading(true);
+      const storesColl = collection(firestore, `users/${authUser.uid}/stores`);
+      const unsubStores = onSnapshot(storesColl, (snapshot) => {
+        const fetchedStores = snapshot.docs.map(d => ({...d.data(), id: d.id})) as Store[];
+        setStores(fetchedStores);
+        
+        if (!activeStore) {
+          const lastActiveId = localStorage.getItem(ACTIVE_STORE_LS_KEY);
+          const storeToActivate = fetchedStores.find(s => s.id === lastActiveId) || fetchedStores[0] || null;
+          setActiveStoreState(storeToActivate);
+        } else {
+            // if the active store was deleted, switch to another one or null
+            if (!fetchedStores.some(s => s.id === activeStore.id)) {
+                setActiveStoreState(fetchedStores[0] || null);
+            }
+        }
+        setLoading(false);
+      });
 
-      const unsubExpenses = onSnapshot(collection(firestore, `${currentBasePath}/expenses`), (snapshot) => {
-        const expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
-        setTransactions(prev => [...prev.filter(t => t.type !== 'expense'), ...expenses]);
-      });
-  
-      const unsubIncomes = onSnapshot(collection(firestore, `${currentBasePath}/incomes`), (snapshot) => {
-        const incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
-        setTransactions(prev => [...prev.filter(t => t.type !== 'income'), ...incomes]);
-      });
-  
-      const unsubCategories = onSnapshot(collection(firestore, `${currentBasePath}/categories`), (snapshot) => {
-        setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
-      });
-  
-      const unsubUsers = onSnapshot(collection(firestore, `${currentBasePath}/app_users`), (snapshot) => {
-        setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
-      });
-
-      const timer = setTimeout(() => setLoading(false), 500);
-  
-      return () => {
-        unsubExpenses();
-        unsubIncomes();
-        unsubCategories();
-        unsubUsers();
-        clearTimeout(timer);
-      };
+      return () => unsubStores();
     } else {
       // Not logged in
       setTransactions([]);
       setCategories([]);
       setUsers([]);
+      setStores([]);
+      setActiveStoreState(null);
       setLoading(false);
     }
   }, [authUser, firestore]);
+
+
+  // Effect for fetching data based on active store
+  useEffect(() => {
+    let unsubExpenses: () => void = () => {};
+    let unsubIncomes: () => void = () => {};
+    let unsubCategories: () => void = () => {};
+    let unsubUsers: () => void = () => {};
+
+    if (activeStore && firestore) {
+        const currentStorePath = `users/${authUser!.uid}/stores/${activeStore.id}`;
+        setLoading(true);
+      
+        unsubExpenses = onSnapshot(collection(firestore, `${currentStorePath}/expenses`), (snapshot) => {
+            const expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
+            setTransactions(prev => [...prev.filter(t => t.type !== 'expense' || t.storeId !== activeStore.id), ...expenses]);
+        });
+    
+        unsubIncomes = onSnapshot(collection(firestore, `${currentStorePath}/incomes`), (snapshot) => {
+            const incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
+            setTransactions(prev => [...prev.filter(t => t.type !== 'income' || t.storeId !== activeStore.id), ...incomes]);
+        });
+    
+        unsubCategories = onSnapshot(collection(firestore, `${currentStorePath}/categories`), (snapshot) => {
+            const newCategories = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[];
+            setCategories(prev => [...prev.filter(c => c.storeId !== activeStore.id), ...newCategories]);
+        });
+    
+        unsubUsers = onSnapshot(collection(firestore, `${currentStorePath}/app_users`), (snapshot) => {
+            const newUsers = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[];
+            setUsers(prev => [...prev.filter(u => u.storeId !== activeStore.id), ...newUsers]);
+        });
+
+      const timer = setTimeout(() => setLoading(false), 500);
+
+      return () => {
+          unsubExpenses();
+          unsubIncomes();
+          unsubCategories();
+          unsubUsers();
+          clearTimeout(timer);
+      };
+    } else if (!activeStore) {
+        setTransactions([]);
+        setCategories([]);
+        setUsers([]);
+        setLoading(false);
+    }
+  }, [activeStore, firestore, authUser]);
 
   const value: AppContextType = {
     transactions,
     categories,
     users,
+    stores,
+    activeStore,
+    setActiveStore,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -173,6 +256,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addUser,
     updateUser,
     deleteUser,
+    addStore,
+    updateStore,
+    deleteStore,
     loading
   };
 
