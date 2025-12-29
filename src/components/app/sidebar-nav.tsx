@@ -2,29 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Code, Settings } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import React, { useState } from 'react';
+import React from 'react';
 
 import { cn } from '@/lib/utils';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar, SidebarSeparator } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
 
@@ -40,7 +31,6 @@ export function SidebarNav() {
   const pathname = usePathname();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const { setOpenMobile } = useSidebar();
 
   const handleLogout = async () => {
@@ -83,7 +73,7 @@ export function SidebarNav() {
         </SidebarMenu>
       </div>
       
-      <div className="border-t p-4">
+      <div className="border-t p-4 space-y-4">
          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start text-left gap-3 px-2 h-auto">
@@ -102,46 +92,24 @@ export function SidebarNav() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsAboutDialogOpen(true)}>
-                <Code className="mr-2 h-4 w-4" />
-                <span>About Developer</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
 
-      <Dialog open={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>About SumBook</DialogTitle>
-            <DialogDescription>This application was developed by Jabed Hossain Sifat.</DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center pt-4">
-             <Avatar className="w-24 h-24">
-                  <AvatarImage src="https://i.ibb.co/sJbqLgck/Whats-App-Image-2024-08-13-at-18-30-49-5dd1efa6.jpg" alt="Jabed Hossain Sifat" />
-                  <AvatarFallback>JS</AvatarFallback>
-              </Avatar>
-          </div>
-           <div className="text-center space-y-1">
-                <p className="font-semibold">Jabed Hossain Sifat</p>
-                <p className="text-sm text-muted-foreground">Developer</p>
-           </div>
-        </DialogContent>
-      </Dialog>
+        <div className="flex items-center gap-3 px-2">
+            <Avatar className="w-8 h-8">
+                <AvatarImage src="https://i.ibb.co/sJbqLgck/Whats-App-Image-2024-08-13-at-18-30-49-5dd1efa6.jpg" alt="Jabed Hossain Sifat" />
+                <AvatarFallback>JS</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground">Developed by</span>
+                <span className="font-semibold text-sm">Jabed Hossain Sifat</span>
+            </div>
+        </div>
+      </div>
     </>
   );
 }
