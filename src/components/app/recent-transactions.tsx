@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit, Trash2, Loader2, Eraser, MoreVertical } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Edit, Trash2, Loader2, Eraser, MoreVertical, FileDown } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -101,7 +103,6 @@ export function RecentTransactions() {
     }
   };
 
-
   const handleSheetOpenChange = (isOpen: boolean) => {
     setIsSheetOpen(isOpen);
     if (!isOpen) {
@@ -129,6 +130,45 @@ export function RecentTransactions() {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [];
 
+  const handleExportPDF = () => {
+    if (!activeStore) return;
+    
+    const doc = new jsPDF();
+    const title = `Transaction Report for ${activeStore.name}`;
+    const date = `Generated on: ${new Date().toLocaleDateString()}`;
+
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+    doc.setFontSize(11);
+    doc.text(date, 14, 30);
+
+    const tableColumn = ["Date", "User", "Details", "Amount"];
+    const tableRows: (string|number)[][] = [];
+
+    sortedTransactions.forEach(t => {
+      const transactionData = [
+        new Date(t.date).toLocaleDateString(),
+        t.userName,
+        t.type === 'income' ? 'Cash In' : getCategoryName(t.categoryId),
+        `${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}`,
+      ];
+      tableRows.push(transactionData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      headStyles: { fillColor: [22, 163, 74] }, // Green color for header
+      styles: { halign: 'center' },
+      columnStyles: {
+        3: { halign: 'right' }
+      }
+    });
+
+    doc.save(`transactions-${activeStore.name.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <>
       <Card>
@@ -136,9 +176,14 @@ export function RecentTransactions() {
           <div className="flex items-center justify-between">
             <CardTitle>Recent Transactions</CardTitle>
             {sortedTransactions.length > 0 && (
-               <Button variant="outline" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
-                <Eraser className="mr-2 h-4 w-4" /> Clear All
-              </Button>
+              <div className="flex items-center gap-2">
+                 <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export to PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
+                  <Eraser className="mr-2 h-4 w-4" /> Clear All
+                </Button>
+              </div>
             )}
           </div>
         </CardHeader>
