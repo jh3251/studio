@@ -86,7 +86,7 @@ export function SidebarNav() {
         </SidebarMenu>
       </div>
       
-      <div className="border-t p-4 space-y-4">
+      <div className="border-t p-4">
          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start text-left gap-3 px-2 h-auto">
@@ -125,17 +125,6 @@ export function SidebarNav() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-          <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                  <AvatarImage src="https://i.ibb.co/sJbqLgck/Whats-App-Image-2024-08-13-at-18-30-49-5dd1efa6.jpg" alt="Jabed Hossain Sifat" />
-                  <AvatarFallback>JS</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                  <span className="font-semibold text-sm">Jabed Hossain Sifat</span>
-                  <span className="text-xs text-muted-foreground">Developer</span>
-              </div>
-          </div>
       </div>
 
       <Dialog open={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen}>
@@ -145,9 +134,15 @@ export function SidebarNav() {
             <DialogDescription>This application was developed by Jabed Hossain Sifat.</DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center pt-4">
-            <p className="text-sm text-muted-foreground">Thank you for using SumBook!</p>
-
+             <Avatar className="w-24 h-24">
+                  <AvatarImage src="https://i.ibb.co/sJbqLgck/Whats-App-Image-2024-08-13-at-18-30-49-5dd1efa6.jpg" alt="Jabed Hossain Sifat" />
+                  <AvatarFallback>JS</AvatarFallback>
+              </Avatar>
           </div>
+           <div className="text-center space-y-1">
+                <p className="font-semibold">Jabed Hossain Sifat</p>
+                <p className="text-sm text-muted-foreground">Developer</p>
+           </div>
         </DialogContent>
       </Dialog>
     </>
