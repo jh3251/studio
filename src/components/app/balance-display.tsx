@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 export function BalanceDisplay() {
-  const { transactions, users, loading, activeStore } = useAppContext();
+  const { transactions, users, loading, activeStore, currency } = useAppContext();
 
   const { totalIncome, totalExpense, userBalances } = useMemo(() => {
     if (!activeStore) return { totalIncome: 0, totalExpense: 0, userBalances: [] };
@@ -46,7 +46,7 @@ export function BalanceDisplay() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
     }).format(amount);
   };
 

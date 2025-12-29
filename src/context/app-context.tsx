@@ -1,14 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
-import type { Transaction, Category, User as AppUser, TransactionType, Store } from '@/lib/types';
+import type { Transaction, Category, User as AppUser, TransactionType, Store, UserPreferences } from '@/lib/types';
 import {
   updateDocumentNonBlocking,
   deleteDocumentNonBlocking,
   addDocumentNonBlocking,
+  setDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
 
 interface AppContextType {
@@ -17,6 +18,8 @@ interface AppContextType {
   users: AppUser[];
   stores: Store[];
   activeStore: Store | null;
+  currency: string;
+  setCurrency: (currency: string) => Promise<void>;
   setActiveStore: (store: Store | null) => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => Promise<void>;
   updateTransaction: (transaction: Omit<Transaction, 'userId' | 'storeId'>) => Promise<void>;
@@ -47,6 +50,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [activeStore, setActiveStoreState] = useState<Store | null>(null);
+  const [currency, setCurrencyState] = useState<string>('USD');
   const [loading, setLoading] = useState(true);
   
   const firestore = useFirestore();
@@ -60,6 +64,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(ACTIVE_STORE_LS_KEY);
     }
   };
+
+  const setCurrency = useCallback(async (newCurrency: string) => {
+    if (!authUser || !firestore) return;
+    const userPrefsRef = doc(firestore, `users/${authUser.uid}/preferences`, 'user');
+    await setDoc(userPrefsRef, { currency: newCurrency }, { merge: true });
+    setCurrencyState(newCurrency);
+  }, [authUser, firestore]);
 
   const basePath = authUser ? `users/${authUser.uid}` : null;
   const storePath = activeStore ? `${basePath}/stores/${activeStore.id}` : null;
@@ -196,6 +207,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (authUser && firestore) {
       setLoading(true);
+      
+      const userPrefsRef = doc(firestore, `users/${authUser.uid}/preferences`, 'user');
+      const unsubPrefs = onSnapshot(userPrefsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const prefs = snapshot.data() as UserPreferences;
+          if (prefs.currency) {
+            setCurrencyState(prefs.currency);
+          }
+        }
+      });
+
       const storesColl = query(collection(firestore, `users/${authUser.uid}/stores`), orderBy('position'));
       const unsubStores = onSnapshot(storesColl, (snapshot) => {
         const fetchedStores = snapshot.docs.map(d => ({...d.data(), id: d.id})) as Store[];
@@ -214,7 +236,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-      return () => unsubStores();
+      return () => {
+        unsubStores();
+        unsubPrefs();
+      };
     } else {
       // Not logged in
       setTransactions([]);
@@ -222,6 +247,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUsers([]);
       setStores([]);
       setActiveStoreState(null);
+      setCurrencyState('USD');
       setLoading(false);
     }
   }, [authUser, firestore]);
@@ -281,6 +307,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     users,
     stores,
     activeStore,
+    currency,
+    setCurrency,
     setActiveStore,
     addTransaction,
     updateTransaction,

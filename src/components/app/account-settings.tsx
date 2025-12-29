@@ -14,6 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import React from 'react';
+import { useAppContext } from '@/context/app-context';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: 'Display name must be at least 2 characters.' }).optional(),
@@ -34,13 +36,19 @@ const passwordSchema = z.object({
   path: ['confirmPassword'],
 });
 
+const currencySchema = z.object({
+    currency: z.string().min(3, { message: 'Currency is required.' }),
+});
+
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type EmailFormValues = z.infer<typeof emailSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
+type CurrencyFormValues = z.infer<typeof currencySchema>;
 
 export function AccountSettings() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { currency, setCurrency } = useAppContext();
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -58,7 +66,18 @@ export function AccountSettings() {
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
   });
-  
+
+  const currencyForm = useForm<CurrencyFormValues>({
+    resolver: zodResolver(currencySchema),
+    defaultValues: {
+      currency: currency,
+    },
+  });
+
+   React.useEffect(() => {
+    currencyForm.reset({ currency });
+  }, [currency, currencyForm]);
+
   const getInitials = (name?: string | null) => {
     if (!name) return '';
     return name
@@ -123,6 +142,19 @@ export function AccountSettings() {
     }
   };
   
+    const onCurrencySubmit = async (data: CurrencyFormValues) => {
+        try {
+            await setCurrency(data.currency);
+            toast({ title: 'Currency Updated', description: 'Your currency has been successfully updated.' });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error updating currency',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        }
+    };
+
   const watchedPhotoUrl = profileForm.watch('photoURL');
   const displayAvatar = watchedPhotoUrl || user?.photoURL;
 
@@ -179,48 +211,90 @@ export function AccountSettings() {
           </Form>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Update Email</CardTitle>
-          <CardDescription>Change the email address for your account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
-              <FormField
-                control={emailForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="new.email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={emailForm.control}
-                name="currentPasswordForEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={emailForm.formState.isSubmitting}>
-                {emailForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Email
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Currency</CardTitle>
+                <CardDescription>Select your preferred currency.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...currencyForm}>
+                    <form onSubmit={currencyForm.handleSubmit(onCurrencySubmit)} className="space-y-4">
+                        <FormField
+                            control={currencyForm.control}
+                            name="currency"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Currency</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a currency" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="USD">USD - United States Dollar</SelectItem>
+                                            <SelectItem value="EUR">EUR - Euro</SelectItem>
+                                            <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                                            <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                                            <SelectItem value="BDT">BDT - Bangladeshi Taka</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <Button type="submit" disabled={currencyForm.formState.isSubmitting}>
+                            {currencyForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Currency
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+            <CardTitle>Update Email</CardTitle>
+            <CardDescription>Change the email address for your account.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Form {...emailForm}>
+                <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                <FormField
+                    control={emailForm.control}
+                    name="email"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>New Email</FormLabel>
+                        <FormControl>
+                        <Input type="email" placeholder="new.email@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={emailForm.control}
+                    name="currentPasswordForEmail"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Current Password</FormLabel>
+                        <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={emailForm.formState.isSubmitting}>
+                    {emailForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Email
+                </Button>
+                </form>
+            </Form>
+            </CardContent>
+        </Card>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Change Password</CardTitle>

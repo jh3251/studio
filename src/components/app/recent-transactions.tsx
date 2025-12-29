@@ -41,7 +41,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore, currency } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -116,7 +116,7 @@ export function RecentTransactions() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
     }).format(amount);
   };
   

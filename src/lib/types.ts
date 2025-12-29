@@ -34,3 +34,7 @@ export interface Store {
   name: string;
   position: number;
 }
+
+export interface UserPreferences {
+  currency: string;
+}
