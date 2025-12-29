@@ -54,22 +54,13 @@ export function BalanceDisplay() {
     }).format(amount);
   };
   
-  const userBalancePairs: {user1: {name: string, balance: number}, user2?: {name: string, balance: number}}[] = [];
-  for (let i = 0; i < userBalances.length; i += 2) {
-      if (i + 1 < userBalances.length) {
-          userBalancePairs.push({ user1: userBalances[i], user2: userBalances[i+1] });
-      } else {
-          userBalancePairs.push({ user1: userBalances[i] });
-      }
-  }
-
-
   if (loading && !activeStore) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-[126px]" />
             <Skeleton className="h-[126px]" />
-            <Skeleton className="h-[126px] col-span-1 md:col-span-2" />
+            <Skeleton className="h-[126px]" />
+            <Skeleton className="h-[126px]" />
         </div>
     )
   }
@@ -100,7 +91,7 @@ export function BalanceDisplay() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="text-sm font-medium" />
+                <CardTitle className="text-sm">Store Totals</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
@@ -116,47 +107,22 @@ export function BalanceDisplay() {
                 </div>
             </CardContent>
       </Card>
-      {userBalancePairs.map((pair, index) => (
-        <Card key={index} className={cn(pair.user2 ? "md:col-span-2" : "")}>
-            <div className={cn("grid", pair.user2 ? "grid-cols-2" : "grid-cols-1")}>
-                <div className="p-6">
-                    <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold">{pair.user1.name}</CardTitle>
-                        <UserIcon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                        <div className={cn(
-                        "text-2xl font-bold",
-                        pair.user1.balance > 0 && "text-green-600 dark:text-green-500",
-                        pair.user1.balance < 0 && "text-red-600 dark:text-red-500",
-                        pair.user1.balance === 0 && "text-muted-foreground"
-                        )}>
-                        {formatCurrency(pair.user1.balance)}
-                        </div>
-                    </div>
+      {userBalances.map((user, index) => (
+        <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-bold">{user.name}</CardTitle>
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className={cn(
+                    "text-2xl font-bold",
+                    user.balance > 0 && "text-green-600 dark:text-green-500",
+                    user.balance < 0 && "text-red-600 dark:text-red-500",
+                    user.balance === 0 && "text-muted-foreground"
+                )}>
+                {formatCurrency(user.balance)}
                 </div>
-                {pair.user2 && (
-                    <>
-                        <Separator orientation="vertical" className="h-auto" />
-                        <div className="p-6">
-                             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-bold">{pair.user2.name}</CardTitle>
-                                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <div className={cn(
-                                "text-2xl font-bold",
-                                pair.user2.balance > 0 && "text-green-600 dark:text-green-500",
-                                pair.user2.balance < 0 && "text-red-600 dark:text-red-500",
-                                pair.user2.balance === 0 && "text-muted-foreground"
-                                )}>
-                                {formatCurrency(pair.user2.balance)}
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
+            </CardContent>
         </Card>
       ))}
     </div>
