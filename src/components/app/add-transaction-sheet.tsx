@@ -51,23 +51,13 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   
   const isEditMode = !!transactionToEdit;
 
-  const defaultFormValues: Partial<TransactionFormValues> = {
-    userName: '',
-    amount: undefined,
-    type: 'expense',
-    date: formatDateForInput(new Date()),
-    categoryId: '',
-  };
-
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues: defaultFormValues,
   });
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    if (users.length === 0) {
+    if (isOpen) {
+      if (users.length === 0) {
         toast({
             variant: "destructive",
             title: "No Users Available",
@@ -75,21 +65,28 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         onOpenChange(false);
         return;
-    }
-    
-    if (isEditMode && transactionToEdit) {
-      form.reset({
-        userName: transactionToEdit.userName || '',
-        amount: transactionToEdit.amount || undefined,
-        type: transactionToEdit.type,
-        date: formatDateForInput(transactionToEdit.date),
-        categoryId: transactionToEdit.categoryId || '',
-      });
-    } else {
-      form.reset(defaultFormValues);
+      }
+      
+      if (isEditMode && transactionToEdit) {
+        form.reset({
+          userName: transactionToEdit.userName || '',
+          amount: transactionToEdit.amount || undefined,
+          type: transactionToEdit.type,
+          date: formatDateForInput(transactionToEdit.date),
+          categoryId: transactionToEdit.categoryId || '',
+        });
+      } else {
+        form.reset({
+          userName: '',
+          amount: undefined,
+          type: 'expense',
+          date: formatDateForInput(new Date()),
+          categoryId: '',
+        });
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactionToEdit, isEditMode, form, isOpen, users]);
+  }, [isOpen, isEditMode, transactionToEdit, form, users]);
   
   const transactionType = form.watch('type');
 
