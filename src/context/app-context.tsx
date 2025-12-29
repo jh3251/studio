@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs, query, orderBy, setDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
@@ -209,42 +209,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for user-level data (stores, preferences)
   useEffect(() => {
-    if (authUser && firestore) {
-      setLoading(true);
-      
-      const userPrefsRef = doc(firestore, `users/${authUser.uid}/preferences`, 'user');
-      const unsubPrefs = onSnapshot(userPrefsRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const prefs = snapshot.data() as UserPreferences;
-          if (prefs.currency) setCurrencyState(prefs.currency);
-        }
-      });
-
-      const storesColl = query(collection(firestore, `users/${authUser.uid}/stores`), orderBy('position'));
-      const unsubStores = onSnapshot(storesColl, (snapshot) => {
-        const fetchedStores = snapshot.docs.map(d => ({...d.data(), id: d.id})) as Store[];
-        setStores(fetchedStores);
-        
-        setActiveStoreState(currentActiveStore => {
-          if (!currentActiveStore) { // If no active store is set
-            const lastActiveId = localStorage.getItem(ACTIVE_STORE_LS_KEY);
-            return fetchedStores.find(s => s.id === lastActiveId) || fetchedStores[0] || null;
-          }
-          if (!fetchedStores.some(s => s.id === currentActiveStore.id)) { // If active store was deleted
-            return fetchedStores[0] || null;
-          }
-          // If the active store still exists, find the latest version of it from the fetched data
-          return fetchedStores.find(s => s.id === currentActiveStore.id) || fetchedStores[0] || null;
-        });
-
-        setLoading(false);
-      });
-
-      return () => {
-        unsubStores();
-        unsubPrefs();
-      };
-    } else {
+    if (!authUser || !firestore) {
       // Not logged in, clear all state
       setTransactions([]);
       setCategories([]);
@@ -253,8 +218,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setActiveStoreState(null);
       setCurrencyState('USD');
       setLoading(false);
+      return;
     }
-  }, [authUser, firestore]);
+
+    setLoading(true);
+    const unsubscribes: (() => void)[] = [];
+
+    const userPrefsRef = doc(firestore, `users/${authUser.uid}/preferences`, 'user');
+    unsubscribes.push(onSnapshot(userPrefsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const prefs = snapshot.data() as UserPreferences;
+        if (prefs.currency) setCurrencyState(prefs.currency);
+      }
+    }));
+
+    const storesColl = query(collection(firestore, `users/${authUser.uid}/stores`), orderBy('position'));
+    unsubscribes.push(onSnapshot(storesColl, (snapshot) => {
+      const fetchedStores = snapshot.docs.map(d => ({...d.data(), id: d.id})) as Store[];
+      setStores(fetchedStores);
+      
+      const lastActiveId = localStorage.getItem(ACTIVE_STORE_LS_KEY);
+      const currentActive = fetchedStores.find(s => s.id === activeStore?.id);
+
+      if (currentActive) {
+        setActiveStoreState(currentActive);
+      } else {
+        const lastActiveStore = fetchedStores.find(s => s.id === lastActiveId);
+        setActiveStoreState(lastActiveStore || fetchedStores[0] || null);
+      }
+
+      setLoading(false);
+    }));
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [authUser, firestore, activeStore?.id]);
 
 
   // Effect for fetching data related to the active store
@@ -263,11 +260,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setTransactions([]);
       setCategories([]);
       setUsers([]);
-      if (!activeStore) setLoading(false);
+      if (authUser && stores.length > 0) {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
+    const unsubscribes: (() => void)[] = [];
     const storePath = `users/${activeStore.userId}/stores/${activeStore.id}`;
 
     const expensesQuery = query(collection(firestore, `${storePath}/expenses`));
@@ -282,39 +281,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setTransactions([...expenses, ...incomes]);
     };
 
-    const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
+    unsubscribes.push(onSnapshot(expensesQuery, (snapshot) => {
       expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
       mergeTransactions();
-    });
+    }));
 
-    const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
+    unsubscribes.push(onSnapshot(incomesQuery, (snapshot) => {
       incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
       mergeTransactions();
-    });
+    }));
 
-    const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
-      const newCategories = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[];
-      setCategories(newCategories);
-    });
+    unsubscribes.push(onSnapshot(categoriesQuery, (snapshot) => {
+      setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
+    }));
 
-    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
-      const newUsers = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[];
-      setUsers(newUsers);
-    });
+    unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
+      setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
+    }));
     
-    // Set loading to false after initial data load attempt
-    const timer = setTimeout(() => setLoading(false), 500);
-
-    return () => {
-      unsubExpenses();
-      unsubIncomes();
-      unsubCategories();
-      unsubUsers();
-      clearTimeout(timer);
-    };
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [activeStore, firestore]);
 
-  const value: AppContextType = {
+  const value = useMemo(() => ({
     transactions,
     categories,
     users,
@@ -340,7 +328,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     updateStoreOrder,
     deleteStore,
     loading
-  };
+  }), [
+    transactions,
+    categories,
+    users,
+    stores,
+    activeStore,
+    currency,
+    loading,
+    setCurrency,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    clearAllTransactions,
+    addCategory,
+    updateCategory,
+    updateCategoryOrder,
+    deleteCategory,
+    addUser,
+    updateUser,
+    updateUserOrder,
+    deleteUser,
+    addStore,
+    updateStore,
+    updateStoreOrder,
+    deleteStore
+  ]);
 
   return (
     <AppContext.Provider value={value}>
