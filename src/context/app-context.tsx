@@ -49,6 +49,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [currency, setCurrencyState] = useState<string>('USD');
   const [loading, setLoading] = useState(true);
+  const [localExpenses, setLocalExpenses] = useState<Transaction[]>([]);
+  const [localIncomes, setLocalIncomes] = useState<Transaction[]>([]);
   
   const firestore = useFirestore();
   const { user: authUser } = useUser();
@@ -221,10 +223,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribes: (() => void)[] = [];
     const userPath = `users/${authUser.uid}`;
 
-    // --- State for individual data streams ---
-    const [localExpenses, setLocalExpenses] = useState<Transaction[]>([]);
-    const [localIncomes, setLocalIncomes] = useState<Transaction[]>([]);
-
     const userPrefsRef = doc(firestore, `${userPath}/preferences/user`);
     unsubscribes.push(onSnapshot(userPrefsRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -250,11 +248,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setLocalIncomes(snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[]);
     }));
 
-    // Effect to merge transactions when local streams update
-    useEffect(() => {
-      setTransactions([...localExpenses, ...localIncomes]);
-    }, [localExpenses, localIncomes]);
-
     unsubscribes.push(onSnapshot(categoriesQuery, (snapshot) => {
       setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
     }));
@@ -274,6 +267,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [authUser, firestore]);
+
+  // Effect to merge transactions when local streams update
+  useEffect(() => {
+    setTransactions([...localExpenses, ...localIncomes]);
+  }, [localExpenses, localIncomes]);
 
   const value = useMemo(() => ({
     transactions,
