@@ -134,6 +134,13 @@ export function RecentTransactions() {
     if (!activeStore) return;
     
     const doc = new jsPDF();
+
+    const formatCurrencyForPDF = (amount: number) => {
+        return `${amount.toLocaleString('en-US')} ${currency}`;
+    };
+    
+    doc.addFont('helvetica', 'normal');
+
     const title = `Transaction Report for ${activeStore.name}`;
     const date = `Generated on: ${new Date().toLocaleDateString()}`;
     let finalY = 0;
@@ -148,9 +155,9 @@ export function RecentTransactions() {
     doc.text("Financial Summary", 14, 40);
     
     const summaryBody: (string|number)[][] = [
-      ["Total Balance", formatCurrency(financialSummary.totalBalance)],
-      ["Total Cash In", formatCurrency(financialSummary.totalIncome)],
-      ["Total Cash Out", formatCurrency(financialSummary.totalExpense)],
+      ["Total Balance", formatCurrencyForPDF(financialSummary.totalBalance)],
+      ["Total Cash In", formatCurrencyForPDF(financialSummary.totalIncome)],
+      ["Total Cash Out", formatCurrencyForPDF(financialSummary.totalExpense)],
     ];
 
     autoTable(doc, {
@@ -173,7 +180,7 @@ export function RecentTransactions() {
       
       const userBalanceBody = financialSummary.userBalances.map(ub => [
         ub.name,
-        formatCurrency(ub.balance),
+        formatCurrencyForPDF(ub.balance),
       ]);
 
       autoTable(doc, {
@@ -200,7 +207,7 @@ export function RecentTransactions() {
         new Date(t.date).toLocaleDateString(),
         t.userName,
         t.type === 'income' ? 'Cash In' : getCategoryName(t.categoryId),
-        `${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}`,
+        `${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString('en-US')} ${currency}`,
       ];
       tableRows.push(transactionData);
     });
