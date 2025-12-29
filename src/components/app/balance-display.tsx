@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Wallet, User as UserIcon, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
@@ -41,7 +42,7 @@ export function BalanceDisplay() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="animate-in fade-in slide-in-from-bottom-5 duration-500">
             <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm">Total Balance</CardTitle>
+                <CardTitle className="text-sm">Balance</CardTitle>
                 <Wallet className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="text-center">
