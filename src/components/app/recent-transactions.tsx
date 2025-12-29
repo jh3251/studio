@@ -210,7 +210,7 @@ export function RecentTransactions() {
 
     sortedTransactions.forEach(t => {
       const transactionData = [
-        new Date(t.date).toLocaleDateString(),
+        new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
         t.userName,
         t.type === 'income' ? 'Cash In' : getCategoryName(t.categoryId),
         `${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString('en-US')} ${currency}`,
@@ -273,7 +273,7 @@ export function RecentTransactions() {
                                         <Badge variant="outline" className="text-green-600 border-green-600/40">Cash In</Badge>
                                     )}
                                     <div className="text-xs text-muted-foreground">
-                                        {new Date(t.date).toLocaleDateString()}
+                                        {new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
                                     </div>
                                     </div>
                                 </div>
