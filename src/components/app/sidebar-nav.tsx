@@ -82,7 +82,7 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </div>
-       <div className="px-4 py-4 mt-auto">
+       <div className="px-4 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
@@ -115,6 +115,19 @@ export function SidebarNav() {
         </DropdownMenu>
       </div>
 
+       <div className="border-t p-4">
+          <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10">
+                  <AvatarImage src="https://avatars.githubusercontent.com/u/1024025?v=4" alt="Jabed Hossain Sifat" />
+                  <AvatarFallback>JS</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                  <span className="font-semibold text-sm">Jabed Hossain Sifat</span>
+                  <span className="text-xs text-muted-foreground">Developer</span>
+              </div>
+          </div>
+      </div>
+
       <Dialog open={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -123,6 +136,7 @@ export function SidebarNav() {
           </DialogHeader>
           <div className="flex items-center justify-center pt-4">
             <p className="text-sm text-muted-foreground">Thank you for using SumBook!</p>
+
           </div>
         </DialogContent>
       </Dialog>
