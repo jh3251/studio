@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SumbookIcon } from '@/components/icons/sumbook-icon';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-const SIGNUP_SECRET = 'create-new-user-secret-key';
+const SIGNUP_SECRET = 'cmg141kfx0002oa0159kn9bu2';
 
 export default function SignUpPage() {
   const auth = useAuth();
