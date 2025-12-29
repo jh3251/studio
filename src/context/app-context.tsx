@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
 import type { Transaction, Category, User as AppUser, TransactionType, UserPreferences } from '@/lib/types';
@@ -86,7 +86,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const setCurrency = useCallback(async (newCurrency: string) => {
     if (!basePath || !firestore) return;
-    const userPrefsRef = doc(firestore, `${basePath}/preferences`, 'user');
+    const userPrefsRef = doc(firestore, `${basePath}/preferences/user`);
     await setDocumentNonBlocking(userPrefsRef, { currency: newCurrency }, { merge: true });
     setCurrencyState(newCurrency);
   }, [basePath, firestore]);
@@ -100,12 +100,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [basePath, firestore, authUser]);
 
   const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'>) => {
-    if (!basePath) return;
-    const { id, type, ...data } = transaction;
-    const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
-    updateDocumentNonBlocking(docRef, data);
-  }, [basePath, firestore]);
+    if (!basePath || !firestore) return;
+    const { id, type, originalType, ...data } = transaction;
+
+    if (type === originalType) {
+      const collectionName = type === 'income' ? 'incomes' : 'expenses';
+      const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
+      updateDocumentNonBlocking(docRef, data);
+    } else {
+        const batch = writeBatch(firestore);
+        
+        // Delete from the old collection
+        const oldCollectionName = originalType === 'income' ? 'incomes' : 'expenses';
+        const oldDocRef = doc(firestore, `${basePath}/${oldCollectionName}`, id);
+        batch.delete(oldDocRef);
+
+        // Create in the new collection
+        const newCollectionName = type === 'income' ? 'incomes' : 'expenses';
+        const newDocRef = doc(firestore, `${basePath}/${newCollectionName}`, id);
+        batch.set(newDocRef, { ...data, type, userId: authUser?.uid });
+        
+        await batch.commit();
+    }
+}, [basePath, firestore, authUser]);
   
   const deleteTransaction = useCallback(async (transactionId: string, type: TransactionType) => {
     if (!basePath) return;
@@ -203,12 +220,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribes: (() => void)[] = [];
     const userPath = `users/${authUser.uid}`;
 
-    const userPrefsRef = doc(firestore, `${userPath}/preferences`, 'user');
+    const userPrefsRef = doc(firestore, `${userPath}/preferences/user`);
     unsubscribes.push(onSnapshot(userPrefsRef, (snapshot) => {
       if (snapshot.exists()) {
         const prefs = snapshot.data() as UserPreferences;
         if (prefs.currency) setCurrencyState(prefs.currency);
       }
+    }, () => {
+        // This is a new user, so create a default preferences doc.
+        const userPrefsRef = doc(firestore, `${userPath}/preferences`, 'user');
+        setDocumentNonBlocking(userPrefsRef, { currency: 'USD' }, { merge: true });
     }));
 
     const expensesQuery = query(collection(firestore, `${userPath}/expenses`));
@@ -237,10 +258,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
     }));
 
+
+
     unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
       setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
     }));
     
+    // Check if there are any users, if not, create one from the auth user
+    getDocs(usersQuery).then(userSnapshot => {
+        if (userSnapshot.empty && authUser.displayName) {
+            const coll = collection(firestore, `${userPath}/app_users`);
+            addDocumentNonBlocking(coll, { name: authUser.displayName, userId: authUser.uid, position: 0 });
+        }
+    });
+
     setLoading(false);
 
     return () => unsubscribes.forEach(unsub => unsub());

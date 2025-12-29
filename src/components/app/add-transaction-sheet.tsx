@@ -107,6 +107,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           ...data,
           id: transactionToEdit.id,
           date: dateAsISOString,
+          originalType: transactionToEdit.type,
           categoryId: data.type === 'expense' ? data.categoryId : '',
         });
         toast({
@@ -188,17 +189,16 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                       onValueChange={field.onChange}
                       value={field.value}
                       className="flex space-x-4"
-                      disabled={isEditMode}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="expense" disabled={isEditMode} />
+                          <RadioGroupItem value="expense" />
                         </FormControl>
                         <FormLabel className="font-normal text-red-600 dark:text-red-500">Cash Out</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="income" disabled={isEditMode} />
+                          <RadioGroupItem value="income" />
                         </FormControl>
                         <FormLabel className="font-normal text-green-600 dark:text-green-500">Cash In</FormLabel>
                       </FormItem>

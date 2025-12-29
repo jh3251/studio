@@ -8,6 +8,7 @@ export interface Transaction {
   type: TransactionType;
   categoryId: string;
   date: string;
+  originalType?: TransactionType;
 }
 
 export interface Category {
