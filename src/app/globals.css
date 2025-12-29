@@ -69,6 +69,6 @@
 
 @layer components {
     [data-sidebar="menu-button"][data-active="true"] {
-        @apply text-destructive;
+        @apply bg-accent text-destructive;
     }
 }
