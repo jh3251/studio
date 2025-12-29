@@ -1,101 +1,20 @@
-/**
- * This ruleset enforces a multi-tiered security model for the SumBook app.
- *
- * Core Philosophy:
- * 1. Admin Users: Own and manage multiple 'stores'. They have full CRUD access to
- *    their own stores and all data nested within them.
- * 2. Store Users: Have access to ONLY ONE specific store. Their credentials are
- *    created by the admin. They can read and write data only within that store.
- *
- * Data Structure:
- * - /user_roles/{uid}: A top-level collection mapping a Firebase Auth UID to a role.
- *   - Doc Data: { role: 'admin' } OR { role: 'store', storeId: '...', adminId: '...' }
- * - /users/{adminId}/stores/{storeId}/...: All business data is nested under the
- *   admin who owns it. This ensures data isolation between different admins.
- *
- * Key Security Decisions:
- * - Default Deny: All paths are closed by default. Access must be explicitly granted.
- * - Role-Based Access: A user's role is fetched from `/user_roles` at the beginning
- *   of a request to determine their permissions.
- * - Admin Ownership: An admin can only access data under their own `/users/{adminId}` path.
- * - Store User Scoping: A store user's access is scoped to a single store path,
- *   determined by the `storeId` and `adminId` in their user_role document.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Fetch the user's role document from the /user_roles collection.
-    function getUserRole(uid) {
-      return get(/databases/$(database)/documents/user_roles/$(uid)).data;
-    }
-
-    // Check if the current user is an admin.
-    function isAdmin() {
-      let userRole = getUserRole(request.auth.uid);
-      return isSignedIn() && userRole.role == 'admin';
-    }
-
     // Check if the current user is the owner of the data they are trying to access.
-    // This applies to admins operating on their own data.
-    function isOwner(adminId) {
-        return isAdmin() && request.auth.uid == adminId;
-    }
-    
-    // Check if the user is a store user with access to the specified store.
-    function isStoreUserFor(adminId, storeId) {
-      let userRole = getUserRole(request.auth.uid);
-      return isSignedIn() 
-             && userRole.role == 'store'
-             && userRole.adminId == adminId
-             && userRole.storeId == storeId;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Rules ---
-
-    // Admins can create roles for others. Users can manage their own role doc.
-    match /user_roles/{uid} {
-      allow read, update: if request.auth.uid == uid;
-      allow create: if isAdmin() || request.auth.uid == uid;
-      allow delete: if isAdmin();
-    }
-
-    // All data is nested under a user (the admin).
-    match /users/{adminId} {
-      // General protection: only the owner admin can operate within their document space.
-      allow read, write: if isOwner(adminId);
-
-      // --- Stores ---
-      // An admin can manage their own stores. A store user can read their assigned store doc.
-      match /stores/{storeId} {
-        // An admin can create, update, delete, and list their own stores.
-        allow list, create, update, delete: if isOwner(adminId);
-        // A store user can also read the document of the store they are assigned to.
-        allow get: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
-
-        // --- Store-Owned Subcollections ---
-        // These rules grant access to either the owning admin or the assigned store user.
-        match /app_users/{appUserId} {
-          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
-        }
-
-        match /categories/{categoryId} {
-          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
-        }
-
-        match /expenses/{expenseId} {
-          allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
-        }
-
-        match /incomes/{incomeId} {
-           allow read, write: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
-        }
-      }
+    // Rules for all data nested under a user document.
+    match /users/{userId}/{path=**} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

@@ -3,10 +3,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-
+import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { useAuth, useUser, useFirestore } from '@/firebase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +12,6 @@ import { SumbookIcon } from '@/components/icons/sumbook-icon';
 
 export default function LoginPage() {
   const auth = useAuth();
-  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -41,41 +38,23 @@ export default function LoginPage() {
     setIsSigningIn(true);
 
     try {
-      // First, try to sign in. This handles existing admins and store users.
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       const authError = error as AuthError;
-
-      // If the user doesn't exist, we'll try to create them.
-      // This is the flow for creating the very first admin user.
       if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const newUser = userCredential.user;
-            
-            // If the user's email is 'admin@example.com', explicitly make them an admin.
-            // Otherwise, this flow is only for the first admin, not for creating store users.
-            if (email.toLowerCase() === 'admin@example.com') {
-                const roleRef = doc(firestore, 'user_roles', newUser.uid);
-                await setDoc(roleRef, { role: 'admin', uid: newUser.uid });
-            } else {
-                // If it's not the designated admin email, we assume it's a store user,
-                // but store users should be created via the admin's 'Stores' page, not here.
-                // So, we show an error.
-                throw new Error("This account does not exist. Store users must be created by an administrator.");
-            }
+          // If user doesn't exist, create a new account. This will be the admin.
+          await createUserWithEmailAndPassword(auth, email, password);
         } catch (createError: any) {
             console.error('Error during sign-up attempt:', createError);
             toast({
                 variant: "destructive",
                 title: "Sign-up Failed",
-                description: createError.message || "Could not create a new account. Only the primary admin can sign up here.",
+                description: createError.message || "Could not create a new account.",
             });
-        } finally {
              setIsSigningIn(false);
         }
       } else {
-        // Handle other sign-in errors
         console.error('Error signing in:', authError);
         toast({
             variant: "destructive",
@@ -85,7 +64,6 @@ export default function LoginPage() {
         setIsSigningIn(false);
       }
     }
-    // Don't set isSigningIn to false here; let the redirect handle it.
   };
 
   if (isUserLoading || user) {
@@ -107,7 +85,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-lg text-muted-foreground">
-          Welcome! Sign in to manage your finances.
+          Welcome! Sign in or sign up to manage your finances.
         </p>
         
         <form onSubmit={handleSignIn} className="w-full space-y-4">
@@ -143,7 +121,7 @@ export default function LoginPage() {
               {isSigningIn ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : null}
-              Sign In
+              Sign In / Sign Up
             </Button>
           </div>
         </form>

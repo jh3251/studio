@@ -14,7 +14,6 @@ export function BalanceDisplay() {
     let totalExpense = 0;
     const userBalanceMap = new Map<string, { income: number; expense: number }>();
 
-    // Initialize map for all users to show them even if they have no transactions
     users.forEach(user => {
         userBalanceMap.set(user.name, { income: 0, expense: 0 });
     });

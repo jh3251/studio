@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as Lucide from 'lucide-react';
-import { PlusCircle, Edit, Trash2, Loader2, GripVertical, Ban } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Ban } from 'lucide-react';
 
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import {

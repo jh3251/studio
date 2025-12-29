@@ -41,7 +41,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions, loading } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -120,7 +120,7 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <>

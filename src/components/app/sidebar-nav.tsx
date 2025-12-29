@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -19,16 +19,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
-import { useAppContext } from '@/context/app-context';
 
-const adminNavItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/categories', icon: Tag, label: 'Categories' },
-  { href: '/users', icon: Users, label: 'Users' },
-  { href: '/stores', icon: StoreIcon, label: 'Stores' },
-];
-
-const storeNavItems = [
+const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/users', icon: Users, label: 'Users' },
@@ -38,7 +30,6 @@ export function SidebarNav() {
   const pathname = usePathname();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const { userRole } = useAppContext();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -53,8 +44,6 @@ export function SidebarNav() {
       .join('');
   };
 
-  const navItems = userRole === 'admin' ? adminNavItems : storeNavItems;
-
   return (
     <>
       <div className="flex items-center gap-3 px-4 py-6">
@@ -65,21 +54,16 @@ export function SidebarNav() {
       </div>
       <div className="flex-1 px-4">
         <SidebarMenu>
-          {navItems.map((item) => {
-            if (userRole !== 'admin' && item.href === '/stores') {
-              return null;
-            }
-            return (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            );
-          })}
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       </div>
        <div className="px-4 py-4 mt-auto">
@@ -90,13 +74,12 @@ export function SidebarNav() {
                 <Loader2 className="w-8 h-8 animate-spin" />
               ) : (
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user?.photoURL || ''} alt={userRole || ''} />
+                  <AvatarImage src={user?.photoURL || ''} alt={user?.email || ''} />
                   <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                 </Avatar>
               )}
               <div className="flex flex-col items-start text-left">
                 <span className="font-medium text-sm truncate">{user?.email || 'User'}</span>
-                <span className="text-xs text-muted-foreground capitalize truncate">{userRole}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>

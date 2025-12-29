@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Transaction } from '@/lib/types';
-import { cn } from '@/lib/utils';
 
 const transactionFormSchema = z.object({
   userName: z.string().min(1, 'User name is required.'),
@@ -91,7 +90,6 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     }
     
     try {
-       // Convert the YYYY-MM-DD string to a full ISO string at UTC midnight
       const dateAsISOString = new Date(data.date).toISOString();
 
       if (isEditMode && transactionToEdit) {
