@@ -65,16 +65,21 @@ export function SidebarNav() {
       </div>
       <div className="flex-1 px-4">
         <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
+          {navItems.map((item) => {
+            if (userRole !== 'admin' && item.href === '/stores') {
+              return null;
+            }
+            return (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </div>
        <div className="px-4 py-4 mt-auto">

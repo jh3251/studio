@@ -61,23 +61,20 @@ service cloud.firestore {
     // Admins can create roles for others. Users can manage their own role doc.
     match /user_roles/{uid} {
       allow read, update: if request.auth.uid == uid;
-      // Allow create if the request is from an admin OR the user is creating their own doc (first signup)
       allow create: if isAdmin() || request.auth.uid == uid;
-      // Deletion might be restricted in a real app to prevent self-lockout
-      allow delete: if false; 
+      allow delete: if isAdmin();
     }
 
     // All data is nested under a user (the admin).
     match /users/{adminId} {
       // General protection: only the owner admin can operate within their document space.
-      // This is a broad rule, more specific rules are below.
       allow read, write: if isOwner(adminId);
 
       // --- Stores ---
       // An admin can manage their own stores. A store user can read their assigned store doc.
       match /stores/{storeId} {
         // An admin can create, update, delete, and list their own stores.
-        allow create, update, delete, list: if isOwner(adminId);
+        allow list, create, update, delete: if isOwner(adminId);
         // A store user can also read the document of the store they are assigned to.
         allow get: if isOwner(adminId) || isStoreUserFor(adminId, storeId);
 
