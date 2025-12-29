@@ -73,7 +73,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} onClick={handleNavClick}>
                 <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className="w-5 h-5" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
