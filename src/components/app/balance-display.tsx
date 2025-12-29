@@ -91,7 +91,6 @@ export function BalanceDisplay() {
         <Card className="col-span-1 md:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="text-sm font-medium" />
-                <Wallet className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
