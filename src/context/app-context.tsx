@@ -233,7 +233,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           if (!fetchedStores.some(s => s.id === currentActiveStore.id)) { // If active store was deleted
             return fetchedStores[0] || null;
           }
-          return currentActiveStore; // Keep current active store if it still exists
+          // If the active store still exists, find the latest version of it from the fetched data
+          return fetchedStores.find(s => s.id === currentActiveStore.id) || fetchedStores[0] || null;
         });
 
         setLoading(false);
@@ -258,45 +259,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for fetching data related to the active store
   useEffect(() => {
-    if (!storePath || !firestore) {
-      if (!activeStore) {
-        // If there's no active store, we shouldn't have any transactions for it.
-        setTransactions([]);
-        setCategories([]);
-        setUsers([]);
-      }
+    if (!activeStore || !firestore) {
+      setTransactions([]);
+      setCategories([]);
+      setUsers([]);
+      if (!activeStore) setLoading(false);
       return;
     }
 
     setLoading(true);
-    
+    const storePath = `users/${activeStore.userId}/stores/${activeStore.id}`;
+
     const expensesQuery = query(collection(firestore, `${storePath}/expenses`));
     const incomesQuery = query(collection(firestore, `${storePath}/incomes`));
     const categoriesQuery = query(collection(firestore, `${storePath}/categories`), orderBy('position'));
     const usersQuery = query(collection(firestore, `${storePath}/app_users`), orderBy('position'));
 
+    let expenses: Transaction[] = [];
+    let incomes: Transaction[] = [];
+
+    const mergeTransactions = () => {
+      setTransactions([...expenses, ...incomes]);
+    };
+
     const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
-      const expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
-      setTransactions(prev => [...prev.filter(t => t.storeId !== activeStore?.id || t.type !== 'expense'), ...expenses]);
+      expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
+      mergeTransactions();
     });
 
     const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
-      const incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
-      setTransactions(prev => [...prev.filter(t => t.storeId !== activeStore?.id || t.type !== 'income'), ...incomes]);
+      incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
+      mergeTransactions();
     });
 
     const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
       const newCategories = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[];
-      setCategories(prev => [...prev.filter(c => c.storeId !== activeStore?.id), ...newCategories]);
+      setCategories(newCategories);
     });
 
     const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
       const newUsers = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[];
-      setUsers(prev => [...prev.filter(u => u.storeId !== activeStore?.id), ...newUsers]);
+      setUsers(newUsers);
     });
     
-    // Using a timer to avoid flashing loading state on fast updates
-    const timer = setTimeout(() => setLoading(false), 300);
+    // Set loading to false after initial data load attempt
+    const timer = setTimeout(() => setLoading(false), 500);
 
     return () => {
       unsubExpenses();
@@ -305,7 +312,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       unsubUsers();
       clearTimeout(timer);
     };
-  }, [storePath, firestore, activeStore]);
+  }, [activeStore, firestore]);
 
   const value: AppContextType = {
     transactions,
