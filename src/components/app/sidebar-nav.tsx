@@ -118,7 +118,7 @@ export function SidebarNav() {
        <div className="border-t p-4">
           <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
-                  <AvatarImage src="https://avatars.githubusercontent.com/u/1024025?v=4" alt="Jabed Hossain Sifat" />
+                  <AvatarImage src="https://storage.googleapis.com/a-prompt-images/user-provided/2e128b95-d227-4a0b-849c-f60408546f17.jpeg" alt="Jabed Hossain Sifat" />
                   <AvatarFallback>JS</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
