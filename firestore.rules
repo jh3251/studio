@@ -58,9 +58,10 @@ service cloud.firestore {
 
     // --- Rules ---
 
-    // Admins can manage their own role doc. No one else can.
+    // Admins can create roles for others. Users can manage their own role doc.
     match /user_roles/{uid} {
-      allow read, create, update: if request.auth.uid == uid;
+      allow read, update: if request.auth.uid == uid;
+      allow create: if isAdmin() || request.auth.uid == uid;
       // Deletion might be restricted in a real app to prevent self-lockout
       allow delete: if false; 
     }
