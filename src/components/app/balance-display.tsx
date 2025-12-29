@@ -99,7 +99,7 @@ export function BalanceDisplay() {
                  <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <ArrowUpCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
-                        <span className="text-sm font-bold">Cash In</span>
+                        <span className="text-sm font-bold">Total Cash In</span>
                     </div>
                     <div className="text-lg font-bold text-green-600 dark:text-green-500">
                         {formatCurrency(totalIncome)}
@@ -109,7 +109,7 @@ export function BalanceDisplay() {
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <ArrowDownCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
-                        <span className="text-sm font-bold">Cash Out</span>
+                        <span className="text-sm font-bold">Total Cash Out</span>
                     </div>
                     <div className="text-lg font-bold text-red-600 dark:text-red-500">
                         {formatCurrency(totalExpense)}
