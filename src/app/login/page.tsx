@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +14,7 @@ import { SumbookIcon } from '@/components/icons/sumbook-icon';
 
 export default function LoginPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -28,39 +30,56 @@ export default function LoginPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+        toast({
+            variant: "destructive",
+            title: "Missing fields",
+            description: "Please enter both email and password.",
+        });
+        return;
+    }
     setIsSigningIn(true);
-    const adminEmail = "admin@example.com";
-    const adminPassword = "password123";
 
     try {
-      await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+      // First, try to sign in.
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-        const authError = error as AuthError;
-        // If the user doesn't exist, create it.
-        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-            try {
-                await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
-            } catch (createError) {
-                console.error('Error creating user:', createError);
-                toast({
-                    variant: "destructive",
-                    title: "Sign-in Failed",
-                    description: "Could not create the necessary user account.",
-                });
-                setIsSigningIn(false);
-            }
-        } else {
-            console.error('Error signing in:', error);
+      const authError = error as AuthError;
+      if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+        // If user does not exist, this might be the very first sign-in attempt
+        // for an admin user. We'll create the account.
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const newUser = userCredential.user;
+            
+            // IMPORTANT: Assign 'admin' role to the first user.
+            // In a real app, you'd have a more secure way to assign admins.
+            // For this prototype, we assume the first person to sign up is the admin.
+            const roleRef = doc(firestore, 'user_roles', newUser.uid);
+            await setDoc(roleRef, { role: 'admin', uid: newUser.uid });
+
+        } catch (createError) {
+            const createAuthError = createError as AuthError;
+            console.error('Error creating user:', createAuthError);
             toast({
                 variant: "destructive",
-                title: "Sign-in Failed",
-                description: "Please check your credentials and try again.",
+                title: "Sign-up Failed",
+                description: createAuthError.message || "Could not create a new account.",
             });
             setIsSigningIn(false);
         }
+      } else {
+        // Handle other sign-in errors
+        console.error('Error signing in:', authError);
+        toast({
+            variant: "destructive",
+            title: "Sign-in Failed",
+            description: authError.message || "An unexpected error occurred.",
+        });
+        setIsSigningIn(false);
+      }
     }
-    // Let the onAuthStateChanged listener handle the redirect.
-    // The isSigningIn state will be reset by the useEffect or if an error occurs.
+    // Let the onAuthStateChanged listener and AppContext handle the redirect and role logic.
   };
 
   if (isUserLoading || user) {
@@ -82,7 +101,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-lg text-muted-foreground">
-          Welcome! Sign in to manage your personal finances.
+          Welcome! Sign in to manage your finances.
         </p>
         
         <form onSubmit={handleSignIn} className="w-full space-y-4">
@@ -91,7 +110,7 @@ export default function LoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="admin@example.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -103,7 +122,7 @@ export default function LoginPage() {
               id="password" 
               type="password" 
               value={password}
-              placeholder="password123"
+              placeholder="••••••••"
               onChange={(e) => setPassword(e.target.value)}
               required 
             />

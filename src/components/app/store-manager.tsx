@@ -44,6 +44,8 @@ import { cn } from '@/lib/utils';
 
 const storeSchema = z.object({
   name: z.string().min(2, { message: 'Store name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 type StoreFormValues = z.infer<typeof storeSchema>;
 
@@ -60,7 +62,7 @@ export function StoreManager() {
 
   const handleDialogOpen = (store: Store | null) => {
     setEditingStore(store);
-    form.reset(store ? { name: store.name } : { name: '' });
+    form.reset(store ? { name: store.name, email: store.email, password: store.password } : { name: '', email: '', password: '' });
     setIsDialogOpen(true);
   };
 
@@ -75,24 +77,24 @@ export function StoreManager() {
       }
       setIsDialogOpen(false);
       setEditingStore(null);
-    } catch (error) {
+    } catch (error: any) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "Could not save store.",
+        description: error.message || "Could not save store.",
       });
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, email: string) => {
     try {
-      await deleteStore(id);
+      await deleteStore(id, email);
       toast({ title: 'Store Deleted', variant: 'destructive' });
-    } catch (error) {
+    } catch (error: any) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "Could not delete store.",
+        description: error.message || "Could not delete store.",
       });
     }
   };
@@ -119,7 +121,7 @@ export function StoreManager() {
         <div className="flex items-center justify-between">
             <div>
                 <CardTitle>Your Stores</CardTitle>
-                <CardDescription>Manage the stores for your finances.</CardDescription>
+                <CardDescription>Manage stores and their dedicated login credentials.</CardDescription>
             </div>
             <Button onClick={() => handleDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Store
@@ -136,6 +138,7 @@ export function StoreManager() {
                   <StoreIcon className="h-6 w-6 text-muted-foreground" />
                   <div className="flex-1">
                     <span className="font-medium">{store.name}</span>
+                     <p className="text-sm text-muted-foreground">{store.email}</p>
                     {isActive && <span className="ml-2 text-xs font-semibold text-primary">(Active)</span>}
                   </div>
                   {!isActive && (
@@ -157,12 +160,12 @@ export function StoreManager() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this store and all associated data (transactions, categories, users).
+                            This action cannot be undone. This will permanently delete this store, its login credentials, and all associated data.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(store.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleDelete(store.id, store.email)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -184,11 +187,11 @@ export function StoreManager() {
                 <DialogHeader>
                     <DialogTitle>{editingStore ? 'Edit' : 'Add'} Store</DialogTitle>
                     <DialogDescription>
-                        {editingStore ? 'Update the details for your store.' : 'Create a new store to track finances.'}
+                        {editingStore ? 'Update the details for your store.' : 'Create a new store and its dedicated login credentials.'}
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
                             name="name"
@@ -202,7 +205,33 @@ export function StoreManager() {
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
+                         <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Login Email</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="store.login@example.com" {...field} disabled={!!editingStore} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Login Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter className="pt-4">
                             <DialogClose asChild>
                                 <Button type="button" variant="ghost">Cancel</Button>
                             </DialogClose>

@@ -19,18 +19,26 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
+import { useAppContext } from '@/context/app-context';
 
-const navItems = [
+const adminNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/users', icon: Users, label: 'Users' },
   { href: '/stores', icon: StoreIcon, label: 'Stores' },
 ];
 
+const storeNavItems = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/categories', icon: Tag, label: 'Categories' },
+  { href: '/users', icon: Users, label: 'Users' },
+];
+
 export function SidebarNav() {
   const pathname = usePathname();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
+  const { userRole } = useAppContext();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -44,6 +52,8 @@ export function SidebarNav() {
       .slice(0, 2)
       .join('');
   };
+
+  const navItems = userRole === 'admin' ? adminNavItems : storeNavItems;
 
   return (
     <>
@@ -75,13 +85,13 @@ export function SidebarNav() {
                 <Loader2 className="w-8 h-8 animate-spin" />
               ) : (
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user?.photoURL || ''} alt={'Admin'} />
+                  <AvatarImage src={user?.photoURL || ''} alt={userRole || ''} />
                   <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                 </Avatar>
               )}
               <div className="flex flex-col items-start text-left">
-                <span className="font-medium text-sm truncate">{user?.email || 'Admin'}</span>
-                <span className="text-xs text-muted-foreground truncate">Administrator</span>
+                <span className="font-medium text-sm truncate">{user?.email || 'User'}</span>
+                <span className="text-xs text-muted-foreground capitalize truncate">{userRole}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>

@@ -18,7 +18,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
-  const { activeStore, stores } = useAppContext();
+  const { activeStore, userRole } = useAppContext();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -54,7 +54,7 @@ export default function AppLayout({
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <SidebarTrigger className="sm:hidden" />
-            <StoreSwitcher />
+            {userRole === 'admin' && <StoreSwitcher />}
             <div className="flex-1" />
             <Button onClick={() => setIsSheetOpen(true)} disabled={!activeStore}>
               <PlusCircle className="mr-2 h-4 w-4" />

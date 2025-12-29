@@ -7,7 +7,7 @@
       "description": "Represents a person within a specific store for tracking purposes.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns this record." },
+        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns the parent store." },
         "storeId": { "type": "string", "description": "The ID of the store this user belongs to." },
         "name": { "type": "string", "description": "Display name of the person." }
       },
@@ -20,7 +20,7 @@
       "description": "Represents an expense recorded within a specific store.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "Owner's UID." },
+        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns the parent store." },
         "storeId": { "type": "string", "description": "The ID of the store this expense belongs to." },
         "userName": { "type": "string" },
         "categoryId": { "type": "string" },
@@ -37,7 +37,7 @@
       "description": "Represents an income recorded within a specific store.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "Owner's UID." },
+        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns the parent store." },
         "storeId": { "type": "string", "description": "The ID of the store this income belongs to." },
         "userName": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
@@ -53,7 +53,7 @@
       "description": "Represents an expense category within a specific store.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "Owner's UID." },
+        "userId": { "type": "string", "description": "The UID of the authenticated Firebase user who owns the parent store." },
         "storeId": { "type": "string", "description": "The ID of the store this category belongs to." },
         "name": { "type": "string" },
         "icon": { "type": "string" }
@@ -64,13 +64,28 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Store",
       "type": "object",
-      "description": "Represents a store or financial context managed by a user.",
+      "description": "Represents a store or financial context managed by a user. Includes credentials for store-specific access.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "The UID of the user who owns this store." },
-        "name": { "type": "string", "description": "The name of the store." }
+        "userId": { "type": "string", "description": "The UID of the user who owns this store (the admin)." },
+        "name": { "type": "string", "description": "The name of the store." },
+        "email": { "type": "string", "format": "email", "description": "The email used for logging into this specific store." },
+        "password": { "type": "string", "description": "The password for this store's specific login." }
       },
-      "required": ["id", "userId", "name"]
+      "required": ["id", "userId", "name", "email", "password"]
+    },
+    "UserRole": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserRole",
+      "type": "object",
+      "description": "Links a Firebase Auth UID to a role (admin or store) and a specific store if applicable.",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase Auth UID." },
+        "role": { "type": "string", "enum": ["admin", "store"], "description": "The role of the user." },
+        "storeId": { "type": "string", "description": "The ID of the store this user has access to. Only present for 'store' roles." },
+        "adminId": { "type": "string", "description": "The UID of the admin user who owns this store. Only present for 'store' roles." }
+      },
+      "required": ["uid", "role"]
     }
   },
   "auth": {
@@ -78,6 +93,14 @@
   },
   "firestore": {
     "structure": [
+       {
+        "path": "/user_roles/{uid}",
+        "definition": {
+          "entityName": "UserRole",
+          "schema": { "$ref": "#/backend/entities/UserRole" },
+          "description": "Stores the role for each Firebase authenticated user."
+        }
+      },
       {
         "path": "/users/{userId}/stores/{storeId}",
         "definition": {
@@ -119,6 +142,6 @@
         }
       }
     ],
-    "reasoning": "The structure is now hierarchical. A top-level `users` collection holds user documents. Each user document contains a `stores` subcollection. All data (app_users, categories, expenses, incomes) is then nested under a specific store. This ensures data isolation both between users and between the different stores of a single user."
+    "reasoning": "The structure is hierarchical. A top-level `users` collection holds admin user documents. Each admin document contains a `stores` subcollection. All data is nested under a specific store. A new top-level `user_roles` collection maps a Firebase Auth UID to a role ('admin' or 'store') to control data access. This allows store-specific users to access only the data for their assigned store, while the admin can access all stores they own."
   }
 }
