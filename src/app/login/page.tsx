@@ -9,13 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SumbookIcon } from '@/components/icons/sumbook-icon';
-import { collection, getDocs } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LoginPage() {
   const auth = useAuth();
-  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -27,19 +24,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-        const checkStores = async () => {
-            if (!firestore) return;
-            const storesRef = collection(firestore, `users/${user.uid}/stores`);
-            const storeSnap = await getDocs(storesRef);
-            if (storeSnap.empty) {
-                router.push('/stores');
-            } else {
-                router.push('/dashboard');
-            }
-        };
-        checkStores();
+        router.push('/dashboard');
     }
-  }, [user, isUserLoading, router, firestore]);
+  }, [user, isUserLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

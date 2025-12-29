@@ -69,7 +69,7 @@ const getIconComponent = (iconName: IconName | string | undefined) => {
 };
 
 export function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory, loading, activeStore, updateCategoryOrder } = useAppContext();
+  const { categories, addCategory, updateCategory, deleteCategory, loading, updateCategoryOrder } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -79,14 +79,6 @@ export function CategoryManager() {
   });
 
   const handleDialogOpen = (category: Category | null) => {
-    if (!activeStore) {
-        toast({
-            variant: "destructive",
-            title: "No active store",
-            description: "Please create or select a store first.",
-        });
-        return;
-    }
     setEditingCategory(category);
     form.reset(category ? { name: category.name, icon: category.icon as IconName } : { name: '', icon: 'ShoppingCart' });
     setIsDialogOpen(true);
@@ -126,10 +118,9 @@ export function CategoryManager() {
   };
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination || !activeStore) return;
+    if (!result.destination) return;
     
-    const currentStoreCategories = categories.filter(c => c.storeId === activeStore.id);
-    const items = Array.from(currentStoreCategories);
+    const items = Array.from(categories);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -152,8 +143,6 @@ export function CategoryManager() {
       );
   }
 
-  const currentStoreCategories = activeStore ? categories.filter(c => c.storeId === activeStore.id) : [];
-
   return (
     <Card>
       <CardHeader>
@@ -162,23 +151,18 @@ export function CategoryManager() {
                 <CardTitle>Your Categories</CardTitle>
                 <CardDescription>Manage and reorder the categories for your transactions.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
+            <Button onClick={() => handleDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Category
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {!activeStore ? (
-            <div className="text-center text-muted-foreground py-16">
-                <p className="font-medium">No store selected.</p>
-                <p className="text-sm mt-1">Please select a store to manage its categories.</p>
-            </div>
-        ) : currentStoreCategories.length > 0 ? (
+        {categories.length > 0 ? (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="categories">
               {(provided) => (
                 <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                  {currentStoreCategories.map((category, index) => {
+                  {categories.map((category, index) => {
                     const IconComponent = getIconComponent(category.icon);
                     return (
                       <Draggable key={category.id} draggableId={category.id} index={index}>
@@ -229,7 +213,7 @@ export function CategoryManager() {
           </DragDropContext>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <p className="font-medium">No categories found for this store.</p>
+            <p className="font-medium">No categories found.</p>
             <p className="text-sm mt-1">Add your first category to get started.</p>
           </div>
         )}

@@ -42,7 +42,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions, activeStore, currency, financialSummary } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, currency, financialSummary } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -123,19 +123,13 @@ export function RecentTransactions() {
     }).format(amount);
   };
   
-  const sortedTransactions = activeStore 
-    ? [...transactions]
-        .filter(t => t.storeId === activeStore.id)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    : [];
+  const sortedTransactions = [...transactions]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const handleExportPDF = () => {
-    if (!activeStore) return;
-    
     const doc = new jsPDF();
 
     const formatCurrencyForPDF = (amount: number) => {
-        // Using currency code instead of symbol to avoid rendering issues
         if (currency === 'BDT') {
             return `${amount.toLocaleString('en-US')} BDT`;
         }
@@ -143,11 +137,10 @@ export function RecentTransactions() {
             style: 'currency',
             currency: currency,
         }).format(amount);
-        // Replace symbol with code
         return formatted.replace(/[\$\€\¥\£\৳]/, currency + ' ');
     };
     
-    const title = `Transaction Report for ${activeStore.name}`;
+    const title = `Transaction Report`;
     const date = `Generated on: ${new Date().toLocaleDateString()}`;
     let finalY = 0;
 
@@ -156,7 +149,6 @@ export function RecentTransactions() {
     doc.setFontSize(11);
     doc.text(date, 14, 30);
     
-    // Summary Section
     doc.setFontSize(14);
     doc.text("Financial Summary", 14, 40);
     
@@ -179,7 +171,6 @@ export function RecentTransactions() {
 
     finalY = (doc as any).lastAutoTable.finalY + 10;
     
-    // User Balances
     if (financialSummary.userBalances.length > 0) {
       doc.setFontSize(14);
       doc.text("User Balances", 14, finalY);
@@ -194,7 +185,7 @@ export function RecentTransactions() {
         body: userBalanceBody,
         startY: finalY + 5,
         theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185] }, // A blue color
+        headStyles: { fillColor: [41, 128, 185] }, 
         styles: { fontSize: 10, cellPadding: 2 },
         columnStyles: {
           1: { halign: 'right' }
@@ -203,8 +194,6 @@ export function RecentTransactions() {
       finalY = (doc as any).lastAutoTable.finalY + 10;
     }
 
-
-    // Transaction Table
     const tableColumn = ["Date", "User", "Details", "Amount"];
     const tableRows: (string|number)[][] = [];
 
@@ -225,14 +214,14 @@ export function RecentTransactions() {
       head: [tableColumn],
       body: tableRows,
       startY: finalY + 5,
-      headStyles: { fillColor: [22, 163, 74] }, // Green color for header
+      headStyles: { fillColor: [22, 163, 74] }, 
       styles: { halign: 'center' },
       columnStyles: {
         3: { halign: 'right' }
       }
     });
 
-    doc.save(`transactions-${activeStore.name.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`transactions-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
@@ -254,11 +243,7 @@ export function RecentTransactions() {
         </CardHeader>
         <CardContent>
             <div className="min-h-[400px]">
-                 {!activeStore ? (
-                    <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
-                        Please select a store to see transactions.
-                    </div>
-                ) : sortedTransactions.length > 0 ? (
+                 {sortedTransactions.length > 0 ? (
                     <div className="space-y-4">
                     {sortedTransactions.map((t, index) => (
                        <div key={t.id} className={cn("p-4 rounded-lg border", index % 2 === 0 ? 'bg-card' : 'bg-accent/50')}>
@@ -329,7 +314,7 @@ export function RecentTransactions() {
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
-                        No transactions yet for this store.
+                        No transactions yet. Add one to get started.
                     </div>
                 )}
           </div>
@@ -345,7 +330,7 @@ export function RecentTransactions() {
       <Dialog open={isClearAllDialogOpen} onOpenChange={setIsClearAllDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Clear All Transaction Data for this Store</DialogTitle>
+            <DialogTitle>Clear All Transaction Data</DialogTitle>
             <DialogDescription>
               This is a destructive action and cannot be undone. To confirm, please enter the password '12345'.
             </DialogDescription>

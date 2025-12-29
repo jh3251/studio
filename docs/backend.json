@@ -4,74 +4,57 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AppUser",
       "type": "object",
-      "description": "Represents a person within a store for tracking purposes.",
+      "description": "Represents a person for tracking purposes.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string", "description": "The UID of the main authenticated user who owns the store." },
-        "storeId": { "type": "string", "description": "The ID of the store this person belongs to." },
+        "userId": { "type": "string", "description": "The UID of the main authenticated user." },
         "name": { "type": "string", "description": "Display name of the person." },
         "position": { "type": "number", "description": "The order of the user in the list." }
       },
-      "required": ["id", "userId", "storeId", "name", "position"]
+      "required": ["id", "userId", "name", "position"]
     },
     "Expense": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Expense",
       "type": "object",
-      "description": "Represents an expense within a store.",
+      "description": "Represents an expense.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
-        "storeId": { "type": "string", "description": "The ID of the store this expense belongs to." },
         "userName": { "type": "string" },
         "categoryId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "amount": { "type": "number" }
       },
-      "required": ["id", "userId", "storeId", "userName", "categoryId", "date", "amount"]
+      "required": ["id", "userId", "userName", "categoryId", "date", "amount"]
     },
     "Income": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Income",
       "type": "object",
-      "description": "Represents an income within a store.",
+      "description": "Represents an income.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
-        "storeId": { "type": "string", "description": "The ID of the store this income belongs to." },
         "userName": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "amount": { "type": "number" }
       },
-      "required": ["id", "userId", "storeId", "userName", "date", "amount"]
+      "required": ["id", "userId", "userName", "date", "amount"]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents an expense category within a store.",
+      "description": "Represents an expense category.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "Owner's UID." },
-        "storeId": { "type": "string", "description": "The ID of the store this category belongs to." },
         "name": { "type": "string" },
         "icon": { "type": "string" },
         "position": { "type": "number", "description": "The order of the category in the list." }
       },
-      "required": ["id", "userId", "storeId", "name", "icon", "position"]
-    },
-    "Store": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Store",
-      "type": "object",
-      "description": "Represents a separate financial entity (e.g., a business, a project) managed by the main user.",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string", "description": "The UID of the authenticated user who owns this store." },
-        "name": { "type": "string", "description": "The name of the store." },
-        "position": { "type": "number", "description": "The order of the store in the list." }
-      },
-      "required": ["id", "userId", "name", "position"]
+      "required": ["id", "userId", "name", "icon", "position"]
     }
   },
   "auth": {
@@ -80,46 +63,38 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/stores/{storeId}",
-        "definition": {
-          "entityName": "Store",
-          "schema": { "$ref": "#/entities/Store" },
-          "description": "Stores the user's financial entities."
-        }
-      },
-      {
-        "path": "/users/{userId}/stores/{storeId}/app_users/{appUserId}",
+        "path": "/users/{userId}/app_users/{appUserId}",
         "definition": {
           "entityName": "AppUser",
           "schema": { "$ref": "#/entities/AppUser" },
-          "description": "Stores user profiles for a specific store."
+          "description": "Stores user profiles."
         }
       },
       {
-        "path": "/users/{userId}/stores/{storeId}/categories/{categoryId}",
+        "path": "/users/{userId}/categories/{categoryId}",
         "definition": {
           "entityName": "Category",
           "schema": { "$ref": "#/entities/Category" },
-          "description": "Stores expense categories for a specific store."
+          "description": "Stores expense categories."
         }
       },
       {
-        "path": "/users/{userId}/stores/{storeId}/expenses/{expenseId}",
+        "path": "/users/{userId}/expenses/{expenseId}",
         "definition": {
           "entityName": "Expense",
           "schema": { "$ref": "#/entities/Expense" },
-          "description": "Stores expense records for a specific store."
+          "description": "Stores expense records."
         }
       },
       {
-        "path": "/users/{userId}/stores/{storeId}/incomes/{incomeId}",
+        "path": "/users/{userId}/incomes/{incomeId}",
         "definition": {
           "entityName": "Income",
           "schema": { "$ref": "#/entities/Income" },
-          "description": "Stores income records for a specific store."
+          "description": "Stores income records."
         }
       }
     ],
-    "reasoning": "The database is structured around a main `users` collection. Each user document contains a `stores` subcollection. All data related to a specific store (its users, categories, expenses, incomes) is nested under that store's document. This ensures strong data isolation between different stores owned by the same user, making security rules straightforward and scalable. A user can only access data within their own `/users/{userId}` document path."
+    "reasoning": "The database is structured around a main `users` collection. All data related to a specific user (their app users, categories, expenses, incomes) is nested under that user's document. This ensures strong data isolation between different users, making security rules straightforward and scalable."
   }
 }

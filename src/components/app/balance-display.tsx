@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 
 export function BalanceDisplay() {
-  const { loading, activeStore, currency, financialSummary } = useAppContext();
+  const { loading, currency, financialSummary } = useAppContext();
   const { totalIncome, totalExpense, totalBalance, userBalances } = financialSummary;
 
   const formatCurrency = (amount: number) => {
@@ -21,7 +21,7 @@ export function BalanceDisplay() {
     }).format(amount);
   };
   
-  if (loading && !activeStore) {
+  if (loading) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-[126px]" />
@@ -32,19 +32,6 @@ export function BalanceDisplay() {
     )
   }
 
-  if (!activeStore) {
-      return (
-        <Card className="col-span-full">
-            <CardHeader>
-                <CardTitle>No Store Selected</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">Please create or select a store to view its balance.</p>
-            </CardContent>
-        </Card>
-      )
-  }
-  
   const userBalanceChunks = [];
   for (let i = 0; i < userBalances.length; i += 2) {
     userBalanceChunks.push(userBalances.slice(i, i + 2));

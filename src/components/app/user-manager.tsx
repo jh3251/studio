@@ -49,7 +49,7 @@ type UserFormValues = z.infer<typeof userSchema>;
 
 
 export function UserManager() {
-  const { users, addUser, updateUser, deleteUser, loading, activeStore, updateUserOrder } = useAppContext();
+  const { users, addUser, updateUser, deleteUser, loading, updateUserOrder } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -59,14 +59,6 @@ export function UserManager() {
   });
 
   const handleDialogOpen = (user: User | null) => {
-    if (!activeStore) {
-        toast({
-            variant: "destructive",
-            title: "No active store",
-            description: "Please create or select a store first.",
-        });
-        return;
-    }
     setEditingUser(user);
     form.reset(user ? { name: user.name } : { name: '' });
     setIsDialogOpen(true);
@@ -106,10 +98,9 @@ export function UserManager() {
   };
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination || !activeStore) return;
+    if (!result.destination) return;
     
-    const currentStoreUsers = users.filter(u => u.storeId === activeStore.id);
-    const items = Array.from(currentStoreUsers);
+    const items = Array.from(users);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -131,8 +122,6 @@ export function UserManager() {
           </Card>
       );
   }
-  
-  const currentStoreUsers = activeStore ? users.filter(u => u.storeId === activeStore.id) : [];
 
   return (
     <Card>
@@ -142,23 +131,18 @@ export function UserManager() {
                 <CardTitle>Your Users</CardTitle>
                 <CardDescription>Manage and reorder the users for your transactions.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
+            <Button onClick={() => handleDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add User
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {!activeStore ? (
-            <div className="text-center text-muted-foreground py-16">
-                <p className="font-medium">No store selected.</p>
-                <p className="text-sm mt-1">Please select a store to manage its users.</p>
-            </div>
-        ) : currentStoreUsers.length > 0 ? (
+        {users.length > 0 ? (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="users">
               {(provided) => (
                 <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                  {currentStoreUsers.map((user, index) => (
+                  {users.map((user, index) => (
                     <Draggable key={user.id} draggableId={user.id} index={index}>
                       {(provided) => (
                         <li 
@@ -206,7 +190,7 @@ export function UserManager() {
           </DragDropContext>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <p className="font-medium">No users found for this store.</p>
+            <p className="font-medium">No users found.</p>
             <p className="text-sm mt-1">Add your first user to get started.</p>
           </div>
         )}

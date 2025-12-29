@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Settings } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import React from 'react';
 
@@ -23,7 +23,6 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/users', icon: Users, label: 'Users' },
   { href: '/categories', icon: Tag, label: 'Categories' },
-  { href: '/stores', icon: StoreIcon, label: 'Stores' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
