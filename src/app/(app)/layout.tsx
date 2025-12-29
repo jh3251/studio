@@ -6,9 +6,6 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/compon
 import { SidebarNav } from '@/components/app/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import { AddTransactionSheet } from '@/components/app/add-transaction-sheet';
 import { useAppContext } from '@/context/app-context';
 import { StoreSwitcher } from '@/components/app/store-switcher';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +17,7 @@ export default function AppLayout({
 }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { users, stores, activeStore, loading: isAppLoading } = useAppContext();
+  const { stores, activeStore, loading: isAppLoading } = useAppContext();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,8 +51,6 @@ export default function AppLayout({
       </div>
     );
   }
-  
-  const canAddTransaction = users.length > 0 && activeStore;
 
   return (
     <SidebarProvider>
@@ -68,13 +62,8 @@ export default function AppLayout({
             <SidebarTrigger className="sm:hidden" />
             <StoreSwitcher />
             <div className="flex-1" />
-            <Button onClick={() => setIsSheetOpen(true)} disabled={!canAddTransaction}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Transaction
-            </Button>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
-        <AddTransactionSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
       </SidebarInset>
     </SidebarProvider>
   );
