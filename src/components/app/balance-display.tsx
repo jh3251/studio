@@ -6,6 +6,7 @@ import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 export function BalanceDisplay() {
   const { transactions, users, loading, activeStore, currency } = useAppContext();
@@ -78,24 +79,28 @@ export function BalanceDisplay() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-bold">Cash In</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(totalIncome)}</div>
+      <Card className="col-span-1 md:col-span-2">
+        <CardContent className="p-6">
+            <div className="grid grid-cols-2 items-center gap-4">
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-bold">Cash In</span>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(totalIncome)}</p>
+                </div>
+                <Separator orientation="vertical" className="h-16 mx-auto" />
+                <div className="space-y-2">
+                     <div className="flex items-center space-x-2">
+                        <TrendingDown className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-bold">Cash Out</span>
+                    </div>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(totalExpense)}</p>
+                </div>
+            </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-bold">Cash Out</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(totalExpense)}</div>
-        </CardContent>
-      </Card>
+      
        <Card className="col-span-1 md:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm">Overall Balance</CardTitle>
