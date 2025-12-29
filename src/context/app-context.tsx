@@ -62,11 +62,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const storePath = activeStore ? `${basePath}/stores/${activeStore.id}` : null;
 
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => {
-    if (!storePath || !activeStore) return;
+    if (!storePath || !activeStore || !authUser) return;
     const { type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
     const coll = collection(firestore, `${storePath}/${collectionName}`);
-    await addDocumentNonBlocking(coll, { ...data, userId: authUser!.uid, storeId: activeStore.id });
+    await addDocumentNonBlocking(coll, { ...data, userId: authUser.uid, storeId: activeStore.id });
   }, [storePath, firestore, authUser, activeStore]);
 
   const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId' | 'storeId'>) => {
@@ -99,9 +99,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [storePath, firestore]);
   
   const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId' | 'storeId'>) => {
-    if (!storePath || !activeStore) return;
+    if (!storePath || !activeStore || !authUser) return;
     const coll = collection(firestore, `${storePath}/categories`);
-    await addDocumentNonBlocking(coll, { ...category, userId: authUser!.uid, storeId: activeStore.id });
+    await addDocumentNonBlocking(coll, { ...category, userId: authUser.uid, storeId: activeStore.id });
   }, [storePath, firestore, authUser, activeStore]);
   
   const updateCategory = useCallback(async (updatedCategory: Pick<Category, 'id'> & Partial<Omit<Category, 'id'|'userId'|'storeId'>>) => {
@@ -118,9 +118,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [storePath, firestore]);
   
   const addUser = useCallback(async (user: Omit<AppUser, 'id' | 'userId' | 'storeId'>) => {
-    if (!storePath || !activeStore) return;
+    if (!storePath || !activeStore || !authUser) return;
     const coll = collection(firestore, `${storePath}/app_users`);
-    await addDocumentNonBlocking(coll, { ...user, userId: authUser!.uid, storeId: activeStore.id });
+    await addDocumentNonBlocking(coll, { ...user, userId: authUser.uid, storeId: activeStore.id });
   }, [storePath, firestore, authUser, activeStore]);
   
   const updateUser = useCallback(async (updatedUser: Pick<AppUser, 'id'> & Partial<Omit<AppUser, 'id'|'userId'|'storeId'>>) => {
@@ -137,9 +137,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [storePath, firestore]);
 
   const addStore = useCallback(async (store: Omit<Store, 'id' | 'userId'>) => {
-    if (!basePath) return;
+    if (!basePath || !authUser) return;
     const coll = collection(firestore, `${basePath}/stores`);
-    await addDocumentNonBlocking(coll, { ...store, userId: authUser!.uid });
+    await addDocumentNonBlocking(coll, { ...store, userId: authUser.uid });
   }, [basePath, firestore, authUser]);
 
   const updateStore = useCallback(async (store: Pick<Store, 'id'> & Partial<Omit<Store, 'id' | 'userId'>>) => {
@@ -198,8 +198,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let unsubCategories: () => void = () => {};
     let unsubUsers: () => void = () => {};
 
-    if (activeStore && firestore) {
-        const currentStorePath = `users/${authUser!.uid}/stores/${activeStore.id}`;
+    if (activeStore && firestore && authUser) {
+        const currentStorePath = `users/${authUser.uid}/stores/${activeStore.id}`;
         setLoading(true);
       
         unsubExpenses = onSnapshot(collection(firestore, `${currentStorePath}/expenses`), (snapshot) => {
