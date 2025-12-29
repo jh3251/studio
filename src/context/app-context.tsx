@@ -100,29 +100,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [basePath, firestore, authUser]);
 
   const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'>) => {
-    if (!basePath || !firestore) return;
+    if (!basePath || !firestore || !authUser) return;
     const { id, type, originalType, ...data } = transaction;
 
     if (type === originalType) {
       const collectionName = type === 'income' ? 'incomes' : 'expenses';
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
-      updateDocumentNonBlocking(docRef, data);
+      await updateDocumentNonBlocking(docRef, data);
     } else {
         const batch = writeBatch(firestore);
         
-        // Delete from the old collection
         const oldCollectionName = originalType === 'income' ? 'incomes' : 'expenses';
         const oldDocRef = doc(firestore, `${basePath}/${oldCollectionName}`, id);
         batch.delete(oldDocRef);
 
-        // Create in the new collection
         const newCollectionName = type === 'income' ? 'incomes' : 'expenses';
         const newDocRef = doc(firestore, `${basePath}/${newCollectionName}`, id);
-        batch.set(newDocRef, { ...data, type, userId: authUser?.uid });
+        
+        const { date, amount, userName, categoryId } = data;
+        const newDocData = { date, amount, userName, userId: authUser.uid, categoryId: type === 'expense' ? categoryId : '' };
+        batch.set(newDocRef, newDocData);
         
         await batch.commit();
     }
-}, [basePath, firestore, authUser]);
+  }, [basePath, firestore, authUser]);
   
   const deleteTransaction = useCallback(async (transactionId: string, type: TransactionType) => {
     if (!basePath) return;
