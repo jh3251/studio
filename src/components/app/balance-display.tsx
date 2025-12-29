@@ -79,34 +79,33 @@ export function BalanceDisplay() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="col-span-1 md:col-span-2">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="text-sm font-medium" />
+        <Card className="col-span-1 md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm">Total Balance</CardTitle>
             <Wallet className="h-4 w-4 text-primary" />
-        </CardHeader>
-        <CardContent>
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-green-600 dark:text-green-500">Cash In:</span>
-                    <span className="text-lg font-semibold">{formatCurrency(totalIncome)}</span>
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold text-primary">{formatCurrency(totalIncome - totalExpense)}</div>
+            </CardContent>
+        </Card>
+        <Card className="col-span-1 md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="text-sm font-medium" />
+                <Wallet className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-green-600 dark:text-green-500">Cash In:</span>
+                        <span className="text-lg font-semibold">{formatCurrency(totalIncome)}</span>
+                    </div>
+                    <div className="text-muted-foreground mx-2">|</div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-red-600 dark:text-red-500">Cash Out:</span>
+                        <span className="text-lg font-semibold">{formatCurrency(totalExpense)}</span>
+                    </div>
                 </div>
-                 <div className="text-muted-foreground mx-2">|</div>
-                 <div className="flex items-center gap-2">
-                    <span className="font-bold text-red-600 dark:text-red-500">Cash Out:</span>
-                    <span className="text-lg font-semibold">{formatCurrency(totalExpense)}</span>
-                </div>
-            </div>
-        </CardContent>
-      </Card>
-      
-       <Card className="col-span-1 md:col-span-2">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm">Overall Balance</CardTitle>
-          <Wallet className="h-4 w-4 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-primary">{formatCurrency(totalIncome - totalExpense)}</div>
-        </CardContent>
+            </CardContent>
       </Card>
       {userBalances.map(user => (
         <Card key={user.name}>
