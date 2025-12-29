@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, User as UserIcon } from 'lucide-react';
+import { Wallet, User as UserIcon } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,6 +77,11 @@ export function BalanceDisplay() {
         </Card>
       )
   }
+  
+  const userBalanceChunks = [];
+  for (let i = 0; i < userBalances.length; i += 2) {
+    userBalanceChunks.push(userBalances.slice(i, i + 2));
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -91,37 +96,43 @@ export function BalanceDisplay() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Store Totals</CardTitle>
+                <CardTitle className="text-sm">Cash In, Cash Out</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-green-600 dark:text-green-500">Cash In:</span>
+                        <span className="font-bold text-green-600 dark:text-green-500">In:</span>
                         <span className="text-lg font-semibold">{formatCurrency(totalIncome)}</span>
                     </div>
-                    <div className="text-muted-foreground mx-2">|</div>
+                    <div className="text-muted-foreground">|</div>
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-red-600 dark:text-red-500">Cash Out:</span>
+                        <span className="font-bold text-red-600 dark:text-red-500">Out:</span>
                         <span className="text-lg font-semibold">{formatCurrency(totalExpense)}</span>
                     </div>
                 </div>
             </CardContent>
       </Card>
-      {userBalances.map((user, index) => (
-        <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">{user.name}</CardTitle>
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className={cn(
-                    "text-2xl font-bold",
-                    user.balance > 0 && "text-green-600 dark:text-green-500",
-                    user.balance < 0 && "text-red-600 dark:text-red-500",
-                    user.balance === 0 && "text-muted-foreground"
-                )}>
-                {formatCurrency(user.balance)}
+      {userBalanceChunks.map((chunk, chunkIndex) => (
+        <Card key={chunkIndex}>
+            <CardContent className="p-4 space-y-3">
+            {chunk.map((user, userIndex) => (
+                <div key={user.name}>
+                    {userIndex > 0 && <Separator className="my-2" />}
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <UserIcon className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-bold">{user.name}</span>
+                        </div>
+                        <div className={cn(
+                            "text-lg font-bold",
+                            user.balance >= 0 && "text-green-600 dark:text-green-500",
+                            user.balance < 0 && "text-red-600 dark:text-red-500"
+                        )}>
+                            {formatCurrency(user.balance)}
+                        </div>
+                    </div>
                 </div>
+            ))}
             </CardContent>
         </Card>
       ))}
