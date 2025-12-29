@@ -80,22 +80,19 @@ export function BalanceDisplay() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card className="col-span-1 md:col-span-2">
-        <CardContent className="p-6">
-            <div className="grid grid-cols-2 items-center gap-4">
-                <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-sm font-bold">Cash In</span>
-                    </div>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(totalIncome)}</p>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Store Totals</CardTitle>
+            <Wallet className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-green-600 dark:text-green-500">Cash In:</span>
+                    <span className="text-lg font-semibold">{formatCurrency(totalIncome)}</span>
                 </div>
-                <Separator orientation="vertical" className="h-16 mx-auto" />
-                <div className="space-y-2">
-                     <div className="flex items-center space-x-2">
-                        <TrendingDown className="h-4 w-4 text-red-500" />
-                        <span className="text-sm font-bold">Cash Out</span>
-                    </div>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-500">{formatCurrency(totalExpense)}</p>
+                 <div className="flex items-center gap-2">
+                    <span className="font-bold text-red-600 dark:text-red-500">Cash Out:</span>
+                    <span className="text-lg font-semibold">{formatCurrency(totalExpense)}</span>
                 </div>
             </div>
         </CardContent>
