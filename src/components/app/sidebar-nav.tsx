@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Code } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Code, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useState } from 'react';
 
@@ -33,6 +33,7 @@ const navItems = [
   { href: '/users', icon: Users, label: 'Users' },
   { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/stores', icon: StoreIcon, label: 'Stores' },
+  { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function SidebarNav() {
