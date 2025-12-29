@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Wallet, User as UserIcon } from 'lucide-react
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export function BalanceDisplay() {
   const { transactions, users, loading, activeStore } = useAppContext();
@@ -108,7 +109,14 @@ export function BalanceDisplay() {
                 <UserIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold text-muted-foreground">{formatCurrency(user.balance)}</div>
+                <div className={cn(
+                  "text-2xl font-bold",
+                  user.balance > 0 && "text-green-600 dark:text-green-500",
+                  user.balance < 0 && "text-red-600 dark:text-red-500",
+                  user.balance === 0 && "text-muted-foreground"
+                )}>
+                  {formatCurrency(user.balance)}
+                </div>
             </CardContent>
         </Card>
       ))}
