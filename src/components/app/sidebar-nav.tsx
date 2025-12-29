@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Code } from 'lucide-react';
 import { signOut } from 'firebase/auth';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
@@ -17,6 +18,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
 
@@ -31,6 +39,7 @@ export function SidebarNav() {
   const pathname = usePathname();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
+  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -87,6 +96,11 @@ export function SidebarNav() {
           <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setIsAboutDialogOpen(true)}>
+              <Code className="mr-2 h-4 w-4" />
+              <span>About</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
@@ -94,6 +108,18 @@ export function SidebarNav() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Dialog open={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>About SumBook</DialogTitle>
+            <DialogDescription>This application was developed by Jabed Hossain Sifat.</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center pt-4">
+            <p className="text-sm text-muted-foreground">Thank you for using SumBook!</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
