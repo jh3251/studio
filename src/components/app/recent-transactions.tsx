@@ -135,10 +135,18 @@ export function RecentTransactions() {
     const doc = new jsPDF();
 
     const formatCurrencyForPDF = (amount: number) => {
-        return `${amount.toLocaleString('en-US')} ${currency}`;
+        // Using currency code instead of symbol to avoid rendering issues
+        if (currency === 'BDT') {
+            return `${amount.toLocaleString('en-US')} BDT`;
+        }
+         const formatted = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+        }).format(amount);
+        // Replace symbol with code
+        return formatted.replace(/[\$\€\¥\£\৳]/, currency + ' ');
     };
     
-    doc.addFont('helvetica', 'normal');
 
     const title = `Transaction Report for ${activeStore.name}`;
     const date = `Generated on: ${new Date().toLocaleDateString()}`;
@@ -369,3 +377,5 @@ export function RecentTransactions() {
     </>
   );
 }
+
+    
