@@ -221,6 +221,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribes: (() => void)[] = [];
     const userPath = `users/${authUser.uid}`;
 
+    // --- State for individual data streams ---
+    const [localExpenses, setLocalExpenses] = useState<Transaction[]>([]);
+    const [localIncomes, setLocalIncomes] = useState<Transaction[]>([]);
+
     const userPrefsRef = doc(firestore, `${userPath}/preferences/user`);
     unsubscribes.push(onSnapshot(userPrefsRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -238,34 +242,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const categoriesQuery = query(collection(firestore, `${userPath}/categories`), orderBy('position'));
     const usersQuery = query(collection(firestore, `${userPath}/app_users`), orderBy('position'));
 
-    let expenses: Transaction[] = [];
-    let incomes: Transaction[] = [];
-
-    const mergeTransactions = () => {
-      setTransactions([...expenses, ...incomes]);
-    };
-
     unsubscribes.push(onSnapshot(expensesQuery, (snapshot) => {
-      expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
-      mergeTransactions();
+      setLocalExpenses(snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[]);
     }));
 
     unsubscribes.push(onSnapshot(incomesQuery, (snapshot) => {
-      incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
-      mergeTransactions();
+      setLocalIncomes(snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[]);
     }));
+
+    // Effect to merge transactions when local streams update
+    useEffect(() => {
+      setTransactions([...localExpenses, ...localIncomes]);
+    }, [localExpenses, localIncomes]);
 
     unsubscribes.push(onSnapshot(categoriesQuery, (snapshot) => {
       setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
     }));
 
-
-
     unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
       setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
     }));
     
-    // Check if there are any users, if not, create one from the auth user
     getDocs(usersQuery).then(userSnapshot => {
         if (userSnapshot.empty && authUser.displayName) {
             const coll = collection(firestore, `${userPath}/app_users`);
