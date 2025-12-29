@@ -126,7 +126,7 @@ export function RecentTransactions() {
   const sortedTransactions = activeStore 
     ? [...transactions]
         .filter(t => t.storeId === activeStore.id)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     : [];
 
   const handleExportPDF = () => {
@@ -147,7 +147,6 @@ export function RecentTransactions() {
         return formatted.replace(/[\$\€\¥\£\৳]/, currency + ' ');
     };
     
-
     const title = `Transaction Report for ${activeStore.name}`;
     const date = `Generated on: ${new Date().toLocaleDateString()}`;
     let finalY = 0;
