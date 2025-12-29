@@ -17,6 +17,7 @@ export interface Category {
   storeId: string;
   name: string;
   icon: string;
+  position: number;
 }
 
 export interface User {
@@ -24,10 +25,12 @@ export interface User {
   userId: string;
   storeId: string;
   name: string;
+  position: number;
 }
 
 export interface Store {
   id: string;
   userId: string;
   name: string;
+  position: number;
 }

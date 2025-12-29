@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as Lucide from 'lucide-react';
-import { PlusCircle, Edit, Trash2, Loader2, Ban } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Ban, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -68,7 +69,7 @@ const getIconComponent = (iconName: IconName | string | undefined) => {
 };
 
 export function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory, loading, activeStore } = useAppContext();
+  const { categories, addCategory, updateCategory, deleteCategory, loading, activeStore, updateCategoryOrder } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -123,6 +124,17 @@ export function CategoryManager() {
       });
     }
   };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination || !activeStore) return;
+    
+    const currentStoreCategories = categories.filter(c => c.storeId === activeStore.id);
+    const items = Array.from(currentStoreCategories);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    updateCategoryOrder(items);
+  };
   
   if (loading) {
       return (
@@ -148,7 +160,7 @@ export function CategoryManager() {
         <div className="flex items-center justify-between">
             <div>
                 <CardTitle>Your Categories</CardTitle>
-                <CardDescription>Manage the categories for your transactions.</CardDescription>
+                <CardDescription>Manage and reorder the categories for your transactions.</CardDescription>
             </div>
             <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Category
@@ -162,41 +174,59 @@ export function CategoryManager() {
                 <p className="text-sm mt-1">Please select a store to manage its categories.</p>
             </div>
         ) : currentStoreCategories.length > 0 ? (
-          <ul className="space-y-3">
-            {currentStoreCategories.map((category) => {
-              const IconComponent = getIconComponent(category.icon);
-              return (
-                <li key={category.id} className="flex items-center gap-4 rounded-lg border p-4">
-                  <IconComponent className="h-6 w-6 text-muted-foreground" />
-                  <span className="flex-1 font-medium">{category.name}</span>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(category)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the category and may affect transactions associated with it.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(category.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="categories">
+              {(provided) => (
+                <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                  {currentStoreCategories.map((category, index) => {
+                    const IconComponent = getIconComponent(category.icon);
+                    return (
+                      <Draggable key={category.id} draggableId={category.id} index={index}>
+                        {(provided) => (
+                           <li 
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className="flex items-center gap-4 rounded-lg border bg-card p-4"
+                          >
+                            <div {...provided.dragHandleProps} className="cursor-grab">
+                              <GripVertical className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <IconComponent className="h-6 w-6 text-muted-foreground" />
+                            <span className="flex-1 font-medium">{category.name}</span>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(category)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the category and may affect transactions associated with it.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(category.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </li>
+                        )}
+                      </Draggable>
+                    )
+                  })}
+                  {provided.placeholder}
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
         ) : (
           <div className="text-center text-muted-foreground py-16">
             <p className="font-medium">No categories found for this store.</p>

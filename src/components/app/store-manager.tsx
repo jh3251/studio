@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { PlusCircle, Edit, Trash2, Loader2, Store as StoreIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, Store as StoreIcon, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +50,7 @@ type StoreFormValues = z.infer<typeof storeSchema>;
 
 
 export function StoreManager() {
-  const { stores, addStore, updateStore, deleteStore, loading, setActiveStore } = useAppContext();
+  const { stores, addStore, updateStore, deleteStore, loading, setActiveStore, updateStoreOrder } = useAppContext();
   const { toast } = useToast();
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -98,6 +99,16 @@ export function StoreManager() {
     }
   };
   
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(stores);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    updateStoreOrder(items);
+  };
+  
   if (loading) {
       return (
           <Card>
@@ -125,7 +136,7 @@ export function StoreManager() {
         <div className="flex items-center justify-between">
             <div>
                 <CardTitle>Your Stores</CardTitle>
-                <CardDescription>Manage the stores for your finances.</CardDescription>
+                <CardDescription>Manage and reorder the stores for your finances.</CardDescription>
             </div>
             <Button onClick={() => handleDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Store
@@ -134,43 +145,59 @@ export function StoreManager() {
       </CardHeader>
       <CardContent>
         {stores.length > 0 ? (
-          <ul className="space-y-3">
-            {stores.map((store) => {
-              return (
-                <li key={store.id} className="flex items-center gap-4 rounded-lg border p-4">
-                  <StoreIcon className="h-6 w-6 text-muted-foreground" />
-                  <span className="flex-1 font-medium">{store.name}</span>
-                  <div className="flex gap-1">
-                    <Button variant="outline" size="sm" onClick={() => handleSelectStore(store)}>
-                        Go to Store
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(store)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the store and all associated data (transactions, users, categories).
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(store.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="stores">
+              {(provided) => (
+                <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                  {stores.map((store, index) => (
+                    <Draggable key={store.id} draggableId={store.id} index={index}>
+                      {(provided) => (
+                        <li 
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className="flex items-center gap-4 rounded-lg border bg-card p-4"
+                        >
+                          <div {...provided.dragHandleProps} className="cursor-grab">
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <StoreIcon className="h-6 w-6 text-muted-foreground" />
+                          <span className="flex-1 font-medium">{store.name}</span>
+                          <div className="flex gap-1">
+                            <Button variant="outline" size="sm" onClick={() => handleSelectStore(store)}>
+                                Go to Store
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(store)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the store and all associated data (transactions, users, categories).
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(store.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
         ) : (
           <div className="text-center text-muted-foreground py-16">
             <p className="font-medium">No stores found.</p>
@@ -213,8 +240,7 @@ export function StoreManager() {
                         </DialogFooter>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+            </DialogContent>        </Dialog>
     </Card>
   );
 }
