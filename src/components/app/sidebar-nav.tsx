@@ -80,17 +80,49 @@ export function SidebarNav() {
               </Link>
             </SidebarMenuItem>
           ))}
-            <SidebarMenuItem>
-                 <SidebarMenuButton onClick={handleLogout}>
-                    <LogOut className="w-5 h-5" />
-                    <span>Log out</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
         </SidebarMenu>
       </div>
       
+      <div className="border-t p-4 space-y-4">
+         <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-full justify-start text-left gap-3 px-2 h-auto">
+              {isUserLoading ? (
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              ) : (
+                <Avatar>
+                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
+                  <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                </Avatar>
+              )}
+               <div className="flex flex-col truncate">
+                  <span className="font-semibold text-sm truncate">{user?.displayName || 'Welcome'}</span>
+                  <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setIsAboutDialogOpen(true)}>
+                <Code className="mr-2 h-4 w-4" />
+                <span>About Developer</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-       <div className="border-t p-4">
           <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
                   <AvatarImage src="https://i.ibb.co/sJbqLgck/Whats-App-Image-2024-08-13-at-18-30-49-5dd1efa6.jpg" alt="Jabed Hossain Sifat" />
