@@ -6,7 +6,6 @@ import autoTable from 'jspdf-autotable';
 import { Edit, Trash2, Loader2, Eraser, MoreVertical, FileDown } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -248,89 +247,84 @@ export function RecentTransactions() {
         </CardHeader>
         <CardContent>
             <div className="min-h-[400px]">
-                <Table>
-                <TableBody>
-                    {!activeStore ? (
-                        <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
-                            Please select a store to see transactions.
-                            </TableCell>
-                        </TableRow>
-                    ) : sortedTransactions.length > 0 ? (
-                    sortedTransactions.map(t => (
-                        <TableRow key={t.id}>
-                        <TableCell>
-                            <div className="font-bold text-lg">{t.userName}</div>
-                            <div className="text-sm text-muted-foreground sm:hidden">
-                                {new Date(t.date).toLocaleDateString()}
+                 {!activeStore ? (
+                    <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
+                        Please select a store to see transactions.
+                    </div>
+                ) : sortedTransactions.length > 0 ? (
+                    <div className="space-y-4">
+                    {sortedTransactions.map(t => (
+                       <Card key={t.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div>
+                                    <div className="font-bold text-lg">{t.userName}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                    {t.type === 'expense' ? (
+                                        <Badge variant="outline" className="text-red-600 border-red-600/40">{getCategoryName(t.categoryId)}</Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-green-600 border-green-600/40">Cash In</Badge>
+                                    )}
+                                    <div className="text-xs text-muted-foreground">
+                                        {new Date(t.date).toLocaleDateString()}
+                                    </div>
+                                    </div>
+                                </div>
                             </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                            {t.type === 'expense' ? (
-                                <Badge variant="outline" className="text-red-600 border-red-600/40">{getCategoryName(t.categoryId)}</Badge>
-                            ) : (
-                                <Badge variant="outline" className="text-green-600 border-green-600/40">Cash In</Badge>
-                            )}
-                             <div className="text-xs text-muted-foreground mt-1">
-                                {new Date(t.date).toLocaleDateString()}
+                             <div className="flex items-center gap-2">
+                                <div
+                                    className={cn(
+                                    'text-right font-semibold text-lg',
+                                    t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
+                                    )}
+                                >
+                                    {t.type === 'income' ? '+' : '-'}
+                                    {formatCurrency(t.amount)}
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <MoreVertical className="h-4 w-4" />
+                                            <span className="sr-only">Actions</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleEdit(t)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                        </DropdownMenuItem>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:bg-destructive/10" role="menuitem">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </div>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete this transaction.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(t)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-                        </TableCell>
-                        <TableCell
-                            className={cn(
-                            'text-right font-semibold',
-                            t.type === 'income' ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
-                            )}
-                        >
-                            {t.type === 'income' ? '+' : '-'}
-                            {formatCurrency(t.amount)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                        <span className="sr-only">Actions</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(t)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Edit
-                                    </DropdownMenuItem>
-                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:bg-destructive/10" role="menuitem">
-                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </div>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete this transaction.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDelete(t)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                            Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                        </TableRow>
-                    ))
-                    ) : (
-                    <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        </div>
+                       </Card>
+                    ))}
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center h-24 text-center text-muted-foreground">
                         No transactions yet for this store.
-                        </TableCell>
-                    </TableRow>
-                    )}
-                </TableBody>
-                </Table>
+                    </div>
+                )}
           </div>
         </CardContent>
       </Card>
