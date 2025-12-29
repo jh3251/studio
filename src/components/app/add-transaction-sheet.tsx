@@ -45,53 +45,92 @@ const formatDateForInput = (date: Date | string) => {
   return `${year}-${month}-${day}`;
 };
 
-export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
-  const { categories, users, addTransaction, updateTransaction } = useAppContext();
+function CreateTransactionForm({ onOpenChange }: { onOpenChange: (isOpen: boolean) => void }) {
+  const { categories, users, addTransaction } = useAppContext();
   const { toast } = useToast();
-  
-  const isEditMode = !!transactionToEdit;
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
+    defaultValues: {
+      userName: users[0]?.name || '',
+      amount: undefined,
+      type: 'expense',
+      date: formatDateForInput(new Date()),
+      categoryId: '',
+    },
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      if (users.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "No Users Available",
-            description: "Please create a user before adding a transaction.",
-        });
-        onOpenChange(false);
-        return;
-      }
-      
-      if (isEditMode && transactionToEdit) {
-        form.reset({
-          userName: transactionToEdit.userName || '',
-          amount: transactionToEdit.amount || undefined,
-          type: transactionToEdit.type,
-          date: formatDateForInput(transactionToEdit.date),
-          categoryId: transactionToEdit.categoryId || '',
-        });
-      } else {
-        form.reset({
-          userName: users[0]?.name || '',
-          amount: undefined,
-          type: 'expense',
-          date: formatDateForInput(new Date()),
-          categoryId: '',
-        });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isEditMode, transactionToEdit, form, users]);
-  
   const transactionType = form.watch('type');
 
   const onSubmit = async (data: TransactionFormValues) => {
-     if (data.type === 'expense' && !data.categoryId) {
+    if (data.type === 'expense' && !data.categoryId) {
+      if (categories.length === 0) {
+        form.setError('categoryId', { type: 'manual', message: 'No categories available. Please create one first.' });
+        return;
+      }
+      form.setError('categoryId', { type: 'manual', message: 'Please select a category for expenses.' });
+      return;
+    }
+
+    try {
+      const dateAsISOString = new Date(data.date).toISOString();
+      await addTransaction({
+        ...data,
+        date: dateAsISOString,
+        categoryId: data.type === 'expense' ? data.categoryId : undefined,
+      });
+      toast({
+        title: 'Transaction added',
+        description: `A new transaction has been added.`,
+      });
+      onOpenChange(false);
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not add transaction.",
+      });
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+        <SharedFormFields form={form} />
+        {transactionType === 'expense' && <CategoryField form={form} />}
+        <DateField form={form} />
+
+        <SheetFooter>
+           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Transaction
+          </Button>
+        </SheetFooter>
+      </form>
+    </Form>
+  );
+}
+
+function EditTransactionForm({ transactionToEdit, onOpenChange }: { transactionToEdit: Transaction, onOpenChange: (isOpen: boolean) => void }) {
+  const { categories, updateTransaction } = useAppContext();
+  const { toast } = useToast();
+
+  const form = useForm<TransactionFormValues>({
+    resolver: zodResolver(transactionFormSchema),
+    defaultValues: {
+      userName: transactionToEdit.userName || '',
+      amount: transactionToEdit.amount || undefined,
+      type: transactionToEdit.type,
+      date: formatDateForInput(transactionToEdit.date),
+      categoryId: transactionToEdit.categoryId || '',
+    },
+  });
+
+  const transactionType = form.watch('type');
+
+  const onSubmit = async (data: TransactionFormValues) => {
+    if (data.type === 'expense' && !data.categoryId) {
       if (categories.length === 0) {
         form.setError('categoryId', { type: 'manual', message: 'No categories available. Please create one first.' });
         return;
@@ -103,39 +142,176 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     try {
       const dateAsISOString = new Date(data.date).toISOString();
 
-      if (isEditMode && transactionToEdit) {
-        await updateTransaction({
-          ...data,
-          id: transactionToEdit.id,
-          date: dateAsISOString,
-          originalType: transactionToEdit.type,
-          categoryId: data.type === 'expense' ? data.categoryId : undefined,
-        });
-        toast({
-          title: 'Transaction updated',
-          description: `Transaction updated successfully.`,
-        });
-      } else {
-        await addTransaction({
-          ...data,
-          date: dateAsISOString,
-          categoryId: data.type === 'expense' ? data.categoryId : undefined,
-        });
-        toast({
-          title: 'Transaction added',
-          description: `A new transaction has been added.`,
-        });
-      }
-      
+      await updateTransaction({
+        ...data,
+        id: transactionToEdit.id,
+        date: dateAsISOString,
+        originalType: transactionToEdit.type,
+        categoryId: data.type === 'expense' ? data.categoryId : undefined,
+      });
+      toast({
+        title: 'Transaction updated',
+        description: `Transaction updated successfully.`,
+      });
       onOpenChange(false);
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: isEditMode ? "Could not update transaction." : "Could not add transaction.",
+        description: "Could not update transaction.",
       });
     }
   };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+        <SharedFormFields form={form} />
+        {transactionType === 'expense' && <CategoryField form={form} />}
+        <DateField form={form} />
+
+        <SheetFooter>
+           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </SheetFooter>
+      </form>
+    </Form>
+  );
+}
+
+// Reusable form fields
+const SharedFormFields = ({ form }: { form: ReturnType<typeof useForm<TransactionFormValues>> }) => {
+  const { users } = useAppContext();
+  return (
+    <>
+      <FormField
+        control={form.control}
+        name="userName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>User</FormLabel>
+             <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a user" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="amount"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Amount</FormLabel>
+            <FormControl>
+              <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="type"
+        render={({ field }) => (
+          <FormItem className="space-y-3">
+            <FormLabel>Type</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className="flex space-x-4"
+              >
+                <FormItem className="flex items-center space-x-2 space-y-0">
+                  <FormControl>
+                    <RadioGroupItem value="expense" />
+                  </FormControl>
+                  <FormLabel className="font-normal text-red-600 dark:text-red-500">Cash Out</FormLabel>
+                </FormItem>
+                <FormItem className="flex items-center space-x-2 space-y-0">
+                  <FormControl>
+                    <RadioGroupItem value="income" />
+                  </FormControl>
+                  <FormLabel className="font-normal text-green-600 dark:text-green-500">Cash In</FormLabel>
+                </FormItem>
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  );
+};
+
+const CategoryField = ({ form }: { form: ReturnType<typeof useForm<TransactionFormValues>> }) => {
+  const { categories } = useAppContext();
+  return (
+    <FormField
+      control={form.control}
+      name="categoryId"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Category</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder={categories.length > 0 ? "Select a category" : "No categories available"} />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};
+
+const DateField = ({ form }: { form: ReturnType<typeof useForm<TransactionFormValues>> }) => (
+  <FormField
+    control={form.control}
+    name="date"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Transaction Date</FormLabel>
+        <FormControl>
+          <Input type="date" {...field} />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+);
+
+
+export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
+  const { users } = useAppContext();
+  const { toast } = useToast();
+  const isEditMode = !!transactionToEdit;
+
+  useEffect(() => {
+    if (isOpen && users.length === 0) {
+      toast({
+          variant: "destructive",
+          title: "No Users Available",
+          description: "Please create a user before adding a transaction.",
+      });
+      onOpenChange(false);
+    }
+  }, [isOpen, users, onOpenChange, toast]);
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -144,116 +320,12 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           <SheetTitle>{isEditMode ? 'Edit Transaction' : 'Add New Transaction'}</SheetTitle>
           <SheetDescription>{isEditMode ? 'Update the details of your transaction.' : 'Fill in the details to track your income or expense.'}</SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
-            <FormField
-              control={form.control}
-              name="userName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>User</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a user" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="expense" />
-                        </FormControl>
-                        <FormLabel className="font-normal text-red-600 dark:text-red-500">Cash Out</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="income" />
-                        </FormControl>
-                        <FormLabel className="font-normal text-green-600 dark:text-green-500">Cash In</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {transactionType === 'expense' && (
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={categories.length > 0 ? "Select a category" : "No categories available"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-             <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Transaction Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <SheetFooter>
-               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditMode ? 'Save Changes' : 'Save Transaction'}
-              </Button>
-            </SheetFooter>
-          </form>
-        </Form>
+        
+        {isEditMode && transactionToEdit ? (
+          <EditTransactionForm transactionToEdit={transactionToEdit} onOpenChange={onOpenChange} />
+        ) : (
+          <CreateTransactionForm onOpenChange={onOpenChange} />
+        )}
       </SheetContent>
     </Sheet>
   );
