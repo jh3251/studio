@@ -80,40 +80,15 @@ export function SidebarNav() {
               </Link>
             </SidebarMenuItem>
           ))}
+            <SidebarMenuItem>
+                 <SidebarMenuButton onClick={handleLogout}>
+                    <LogOut className="w-5 h-5" />
+                    <span>Log out</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
         </SidebarMenu>
       </div>
-       <div className="px-4 py-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto">
-              {isUserLoading ? (
-                <Loader2 className="w-8 h-8 animate-spin" />
-              ) : (
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={user?.photoURL || ''} alt={user?.email || ''} />
-                  <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
-                </Avatar>
-              )}
-              <div className="flex flex-col items-start text-left">
-                <span className="font-medium text-sm truncate">{user?.email || 'User'}</span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setIsAboutDialogOpen(true)}>
-              <Code className="mr-2 h-4 w-4" />
-              <span>About</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      
 
        <div className="border-t p-4">
           <div className="flex items-center gap-3">
