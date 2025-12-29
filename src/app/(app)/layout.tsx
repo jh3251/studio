@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { AddTransactionSheet } from '@/components/app/add-transaction-sheet';
 import { useAppContext } from '@/context/app-context';
+import { StoreSwitcher } from '@/components/app/store-switcher';
 
 export default function AppLayout({
   children,
@@ -19,6 +20,7 @@ export default function AppLayout({
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { stores, activeStore } = useAppContext();
 
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export default function AppLayout({
     );
   }
   
+  const canAddTransaction = stores.length > 0 && !!activeStore;
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -52,8 +56,9 @@ export default function AppLayout({
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <SidebarTrigger className="sm:hidden" />
+            <StoreSwitcher />
             <div className="flex-1" />
-            <Button onClick={() => setIsSheetOpen(true)}>
+            <Button onClick={() => setIsSheetOpen(true)} disabled={!canAddTransaction}>
               <PlusCircle className="mr-2 h-4 w-4" />
               New Transaction
             </Button>

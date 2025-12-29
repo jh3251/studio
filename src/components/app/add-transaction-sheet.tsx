@@ -46,7 +46,7 @@ const formatDateForInput = (date: Date | string) => {
 };
 
 export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
-  const { categories, users, addTransaction, updateTransaction } = useAppContext();
+  const { categories, users, addTransaction, updateTransaction, activeStore } = useAppContext();
   const { toast } = useToast();
   
   const isEditMode = !!transactionToEdit;
@@ -65,21 +65,31 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   });
 
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && transactionToEdit) {
-        form.reset({
-          userName: transactionToEdit.userName || '',
-          amount: transactionToEdit.amount || undefined,
-          type: transactionToEdit.type,
-          date: formatDateForInput(transactionToEdit.date),
-          categoryId: transactionToEdit.categoryId || '',
+    if (!isOpen) return;
+
+    if (!activeStore) {
+        toast({
+            variant: "destructive",
+            title: "No Active Store",
+            description: "Please create or select a store before adding a transaction.",
         });
-      } else {
-        form.reset(defaultFormValues);
-      }
+        onOpenChange(false);
+        return;
+    }
+    
+    if (isEditMode && transactionToEdit) {
+      form.reset({
+        userName: transactionToEdit.userName || '',
+        amount: transactionToEdit.amount || undefined,
+        type: transactionToEdit.type,
+        date: formatDateForInput(transactionToEdit.date),
+        categoryId: transactionToEdit.categoryId || '',
+      });
+    } else {
+      form.reset(defaultFormValues);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactionToEdit, isEditMode, form, isOpen]);
+  }, [transactionToEdit, isEditMode, form, isOpen, activeStore]);
   
   const transactionType = form.watch('type');
 
