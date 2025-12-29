@@ -7,7 +7,7 @@ import { signOut } from 'firebase/auth';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -40,10 +40,15 @@ export function SidebarNav() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const { setOpenMobile } = useSidebar();
 
   const handleLogout = async () => {
     await signOut(auth);
   };
+  
+  const handleNavClick = () => {
+    setOpenMobile(false);
+  }
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'A';
@@ -66,7 +71,7 @@ export function SidebarNav() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
+              <Link href={item.href} onClick={handleNavClick}>
                 <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
                   <item.icon className="w-4 h-4" />
                   <span>{item.label}</span>
