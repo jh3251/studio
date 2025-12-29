@@ -3,7 +3,6 @@ export type TransactionType = 'income' | 'expense';
 export interface Transaction {
   id: string;
   userId: string;
-  storeId: string;
   userName: string;
   amount: number;
   type: TransactionType;
@@ -14,19 +13,11 @@ export interface Transaction {
 export interface Category {
   id:string;
   userId: string;
-  storeId: string;
   name: string;
   icon: string;
 }
 
 export interface User {
-  id: string;
-  userId: string;
-  storeId: string;
-  name: string;
-}
-
-export interface Store {
   id: string;
   userId: string;
   name: string;

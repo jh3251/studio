@@ -48,7 +48,7 @@ type UserFormValues = z.infer<typeof userSchema>;
 
 
 export function UserManager() {
-  const { users, addUser, updateUser, deleteUser, loading, activeStore } = useAppContext();
+  const { users, addUser, updateUser, deleteUser, loading } = useAppContext();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -58,14 +58,6 @@ export function UserManager() {
   });
 
   const handleDialogOpen = (user: User | null) => {
-    if (!activeStore) {
-        toast({
-            variant: "destructive",
-            title: "No Active Store",
-            description: "You must select a store to manage users.",
-        });
-        return;
-    }
     setEditingUser(user);
     form.reset(user ? { name: user.name } : { name: '' });
     setIsDialogOpen(true);
@@ -104,7 +96,7 @@ export function UserManager() {
     }
   };
   
-  if (loading && !activeStore) {
+  if (loading) {
       return (
           <Card>
               <CardHeader>
@@ -128,18 +120,13 @@ export function UserManager() {
                 <CardTitle>Your Users</CardTitle>
                 <CardDescription>Manage the users for your transactions.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)} disabled={!activeStore}>
+            <Button onClick={() => handleDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add User
             </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {!activeStore ? (
-            <div className="text-center text-muted-foreground py-16">
-                <p className="font-medium">No store selected</p>
-                <p className="text-sm mt-1">Please create or select a store to view users.</p>
-            </div>
-        ) : users.length > 0 ? (
+        {users.length > 0 ? (
           <ul className="space-y-3">
             {users.map((user) => {
               return (
@@ -176,7 +163,7 @@ export function UserManager() {
           </ul>
         ) : (
           <div className="text-center text-muted-foreground py-16">
-            <p className="font-medium">No users found for this store.</p>
+            <p className="font-medium">No users found.</p>
             <p className="text-sm mt-1">Add your first user to get started.</p>
           </div>
         )}

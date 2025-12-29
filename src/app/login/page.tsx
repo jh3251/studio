@@ -43,7 +43,7 @@ export default function LoginPage() {
       const authError = error as AuthError;
       if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
         try {
-          // If user doesn't exist, create a new account. This will be the admin.
+          // If user doesn't exist, create a new account.
           await createUserWithEmailAndPassword(auth, email, password);
         } catch (createError: any) {
             console.error('Error during sign-up attempt:', createError);
