@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Wallet, User as UserIcon } from 'lucide-react';
+import { Wallet, User as UserIcon, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -95,23 +95,28 @@ export function BalanceDisplay() {
             </CardContent>
         </Card>
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Cash In, Cash Out</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+            <CardContent className="p-4 space-y-3">
+                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-green-600 dark:text-green-500">In:</span>
-                        <span className="text-lg font-semibold">{formatCurrency(totalIncome)}</span>
+                        <ArrowUpCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
+                        <span className="text-sm font-bold">Cash In</span>
                     </div>
-                    <div className="text-muted-foreground">|</div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-500">
+                        {formatCurrency(totalIncome)}
+                    </div>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-red-600 dark:text-red-500">Out:</span>
-                        <span className="text-lg font-semibold">{formatCurrency(totalExpense)}</span>
+                        <ArrowDownCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
+                        <span className="text-sm font-bold">Cash Out</span>
+                    </div>
+                    <div className="text-lg font-bold text-red-600 dark:text-red-500">
+                        {formatCurrency(totalExpense)}
                     </div>
                 </div>
             </CardContent>
-      </Card>
+        </Card>
       {userBalanceChunks.map((chunk, chunkIndex) => (
         <Card key={chunkIndex}>
             <CardContent className="p-4 space-y-3">
