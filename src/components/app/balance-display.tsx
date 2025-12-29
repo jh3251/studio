@@ -105,7 +105,7 @@ export function BalanceDisplay() {
       {userBalances.map(user => (
         <Card key={user.name}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{user.name}</CardTitle>
+                <CardTitle className="text-sm font-bold">{user.name}</CardTitle>
                 <UserIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
