@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SumbookIcon } from '@/components/icons/sumbook-icon';
 import { collection, getDocs } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -20,11 +21,14 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
+
 
   useEffect(() => {
     if (!isUserLoading && user) {
         const checkStores = async () => {
+            if (!firestore) return;
             const storesRef = collection(firestore, `users/${user.uid}/stores`);
             const storeSnap = await getDocs(storesRef);
             if (storeSnap.empty) {
@@ -37,7 +41,7 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router, firestore]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
         toast({
@@ -47,34 +51,38 @@ export default function LoginPage() {
         });
         return;
     }
-    setIsSigningIn(true);
+    setIsSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      const authError = error as AuthError;
-      if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-        try {
-          // If user doesn't exist, create a new account.
-          await createUserWithEmailAndPassword(auth, email, password);
-        } catch (createError: any) {
-            console.error('Error during sign-up attempt:', createError);
-            toast({
-                variant: "destructive",
-                title: "Sign-up Failed",
-                description: createError.message || "Could not create a new account.",
-            });
-             setIsSigningIn(false);
+        if (activeTab === 'signin') {
+            await signInWithEmailAndPassword(auth, email, password);
+        } else {
+            await createUserWithEmailAndPassword(auth, email, password);
         }
-      } else {
-        console.error('Error signing in:', authError);
+    } catch (error) {
+        const authError = error as AuthError;
+        let title = 'Authentication Failed';
+        let description = authError.message || 'An unexpected error occurred.';
+
+        if (authError.code === 'auth/user-not-found') {
+            title = 'Sign-in Failed';
+            description = 'No account found with this email. Please sign up instead.';
+        } else if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+            title = 'Sign-in Failed';
+            description = 'Incorrect password. Please try again.';
+        } else if (authError.code === 'auth/email-already-in-use') {
+            title = 'Sign-up Failed';
+            description = 'This email is already in use. Please sign in instead.';
+        }
+        
+        console.error(`Error during ${activeTab}:`, authError);
         toast({
             variant: "destructive",
-            title: "Sign-in Failed",
-            description: authError.message || "An unexpected error occurred.",
+            title: title,
+            description: description,
         });
-        setIsSigningIn(false);
-      }
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -95,49 +103,66 @@ export default function LoginPage() {
             </div>
             <h1 className="text-4xl font-bold font-headline text-primary">SumBook</h1>
         </div>
-
-        <p className="text-center text-lg text-muted-foreground">
-          Welcome! Sign in or sign up to manage your finances.
-        </p>
         
-        <form onSubmit={handleSignIn} className="w-full space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              value={password}
-              placeholder="••••••••"
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-            />
-          </div>
-          <div className="pt-2">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSigningIn}
-              size="lg"
-            >
-              {isSigningIn ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : null}
-              Sign In / Sign Up
-            </Button>
-          </div>
-        </form>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin">
+                <form onSubmit={handleSubmit} className="w-full space-y-4 pt-4">
+                  <AuthFields email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
+                      {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                      Sign In
+                    </Button>
+                  </div>
+                </form>
+            </TabsContent>
+            <TabsContent value="signup">
+                 <form onSubmit={handleSubmit} className="w-full space-y-4 pt-4">
+                  <AuthFields email={email} setEmail={setEmail} password={password} setPassword={setPassword} />
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
+                      {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                      Create Account
+                    </Button>
+                  </div>
+                </form>
+            </TabsContent>
+        </Tabs>
       </div>
     </main>
   );
+}
+
+
+function AuthFields({email, setEmail, password, setPassword}: {email: string, setEmail: (e:string) => void, password: string, setPassword: (p:string)=>void}) {
+    return (
+        <>
+            <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                id="password" 
+                type="password" 
+                value={password}
+                placeholder="••••••••"
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                />
+            </div>
+        </>
+    )
 }
