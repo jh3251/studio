@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
-import { ThemeToggle } from '../theme-toggle';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -99,7 +98,6 @@ export function SidebarNav() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
             </DropdownMenu>
-            <ThemeToggle />
          </div>
 
         <div className="flex items-center gap-3 px-2">
