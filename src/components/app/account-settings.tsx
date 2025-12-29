@@ -3,20 +3,22 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, updateProfile } from 'firebase/auth';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-import { useUser } from '@/firebase';
+import { useFirebase, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import React, { useRef, useState } from 'react';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: 'Display name must be at least 2 characters.' }).optional(),
-  photoURL: z.string().url({ message: 'Please enter a valid URL.' }).or(z.literal('')).optional(),
+  photoURL: z.string().optional(),
 });
 
 const emailSchema = z.object({
@@ -39,7 +41,11 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export function AccountSettings() {
   const { user } = useUser();
+  const { firebaseApp } = useFirebase();
   const { toast } = useToast();
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -78,17 +84,46 @@ export function AccountSettings() {
     try {
       await updateProfile(user, {
         displayName: data.displayName,
-        photoURL: data.photoURL,
+        // photoURL is handled via file upload now, this field is just for display
       });
-      // We need to trigger a re-render or state update to see the change in the UI
-      // For now, Firebase will handle this, but a local state update might be needed
-      toast({ title: 'Profile Updated', description: 'Your profile has been successfully updated.' });
+      toast({ title: 'Profile Updated', description: 'Your display name has been successfully updated.' });
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error updating profile',
         description: error.message || 'An unexpected error occurred.',
       });
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !user) {
+      return;
+    }
+    const file = event.target.files[0];
+    setAvatarPreview(URL.createObjectURL(file));
+    setIsUploading(true);
+
+    try {
+      const storage = getStorage(firebaseApp);
+      const avatarRef = storageRef(storage, `avatars/${user.uid}/${file.name}`);
+      
+      const snapshot = await uploadBytes(avatarRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      await updateProfile(user, { photoURL: downloadURL });
+      profileForm.setValue('photoURL', downloadURL);
+      
+      toast({ title: 'Avatar Updated', description: 'Your new avatar has been saved.' });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: error.message || 'Could not upload your new avatar.',
+      });
+      setAvatarPreview(null); // Revert preview on failure
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -123,6 +158,9 @@ export function AccountSettings() {
       });
     }
   };
+  
+  const watchedPhotoUrl = profileForm.watch('photoURL');
+  const displayAvatar = avatarPreview || watchedPhotoUrl || user?.photoURL;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -134,13 +172,31 @@ export function AccountSettings() {
         <CardContent>
            <Form {...profileForm}>
             <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={profileForm.watch('photoURL') || user?.photoURL || undefined} />
-                  <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
-                </Avatar>
-                <p className="text-sm text-muted-foreground">Provide a URL to update your avatar.</p>
+               <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={displayAvatar || undefined} />
+                    <AvatarFallback className="text-3xl">{getInitials(user?.displayName)}</AvatarFallback>
+                  </Avatar>
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/png, image/jpeg, image/gif"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Change Avatar
+                </Button>
               </div>
+
               <FormField
                 control={profileForm.control}
                 name="displayName"
@@ -154,20 +210,8 @@ export function AccountSettings() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={profileForm.control}
-                name="photoURL"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Photo URL</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com/avatar.jpg" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+              
+              <Button type="submit" disabled={profileForm.formState.isSubmitting || isUploading}>
                 {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Profile
               </Button>
