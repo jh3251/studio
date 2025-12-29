@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Tag, LogOut, Loader2, Users, Store as StoreIcon, Code, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar, SidebarSeparator } from '@/components/ui/sidebar';
 import { useAuth, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -70,15 +70,18 @@ export function SidebarNav() {
       </div>
       <div className="flex-1 px-4">
         <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <Link href={item.href} onClick={handleNavClick}>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
+          {navItems.map((item, index) => (
+            <React.Fragment key={item.href}>
+              <SidebarMenuItem>
+                <Link href={item.href} onClick={handleNavClick}>
+                  <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              {index < navItems.length - 1 && <SidebarSeparator className="my-1" />}
+            </React.Fragment>
           ))}
         </SidebarMenu>
       </div>
