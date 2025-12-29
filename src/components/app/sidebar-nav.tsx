@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
+import { ThemeToggle } from '../theme-toggle';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -73,30 +74,33 @@ export function SidebarNav() {
       </div>
       
       <div className="border-t p-4 space-y-4">
-         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start text-left gap-3 px-2 h-auto">
-              {isUserLoading ? (
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              ) : (
-                <Avatar>
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
-                  <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
-                </Avatar>
-              )}
-               <div className="flex flex-col truncate">
-                  <span className="font-semibold text-sm truncate">{user?.displayName || 'Welcome'}</span>
-                  <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+         <div className="flex items-center gap-2">
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start text-left gap-3 px-2 h-auto">
+                {isUserLoading ? (
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                ) : (
+                    <Avatar>
+                    {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
+                    <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                    </Avatar>
+                )}
+                <div className="flex flex-col truncate">
+                    <span className="font-semibold text-sm truncate">{user?.displayName || 'Welcome'}</span>
+                    <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
+                </div>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+            </DropdownMenu>
+            <ThemeToggle />
+         </div>
 
         <div className="flex items-center gap-3 px-2">
             <Avatar className="w-8 h-8">
