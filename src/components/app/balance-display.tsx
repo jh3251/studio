@@ -95,7 +95,7 @@ export function BalanceDisplay() {
       </Card>
        <Card className="col-span-1 md:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-bold text-primary">Overall Balance</CardTitle>
+          <CardTitle className="text-sm font-bold">Overall Balance</CardTitle>
           <Wallet className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
