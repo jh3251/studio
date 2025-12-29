@@ -77,7 +77,7 @@ export function BalanceDisplay() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cash In</CardTitle>
+          <CardTitle className="text-sm font-bold">Cash In</CardTitle>
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
@@ -86,7 +86,7 @@ export function BalanceDisplay() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cash Out</CardTitle>
+          <CardTitle className="text-sm font-bold">Cash Out</CardTitle>
           <TrendingDown className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
@@ -95,7 +95,7 @@ export function BalanceDisplay() {
       </Card>
        <Card className="col-span-1 md:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Overall Balance</CardTitle>
+          <CardTitle className="text-sm font-bold">Overall Balance</CardTitle>
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -105,7 +105,7 @@ export function BalanceDisplay() {
       {userBalances.map(user => (
         <Card key={user.name}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{user.name}'s Balance</CardTitle>
+                <CardTitle className="text-sm font-medium">{user.name}</CardTitle>
                 <UserIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
