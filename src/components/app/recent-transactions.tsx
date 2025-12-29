@@ -164,7 +164,7 @@ export function RecentTransactions() {
                         <TableRow key={t.id}>
                         <TableCell>
                             <div className="font-bold text-lg">{t.userName}</div>
-                            <div className="text-sm text-muted-foreground md:hidden">
+                            <div className="text-sm text-muted-foreground sm:hidden">
                                 {new Date(t.date).toLocaleDateString()}
                             </div>
                         </TableCell>
