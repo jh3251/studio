@@ -22,9 +22,9 @@ import { SumbookIcon } from '../icons/sumbook-icon';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/stores', icon: StoreIcon, label: 'Stores' },
-  { href: '/categories', icon: Tag, label: 'Categories' },
   { href: '/users', icon: Users, label: 'Users' },
+  { href: '/categories', icon: Tag, label: 'Categories' },
+  { href: '/stores', icon: StoreIcon, label: 'Stores' },
 ];
 
 export function SidebarNav() {
