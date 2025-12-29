@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, writeBatch, getDocs, query, where, getDoc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { initializeApp, getApp, deleteApp } from 'firebase/app';
+import { useAuth, useFirestore, useUser, firebaseConfig } from '@/firebase';
 
 import type { Transaction, Category, User, TransactionType, Store, UserRole } from '@/lib/types';
 import {
@@ -67,15 +68,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Effect to determine user role and fetch associated data
   useEffect(() => {
     if (authUser && firestore) {
-      setLoading(true);
       const roleRef = doc(firestore, 'user_roles', authUser.uid);
       const unsub = onSnapshot(roleRef, async (roleSnap) => {
+        setLoading(true);
         if (roleSnap.exists()) {
           const roleData = roleSnap.data() as UserRole;
           setUserRole(roleData.role);
 
           if (roleData.role === 'admin') {
-            // Admin: fetch all their stores
             const storesCol = collection(firestore, `users/${authUser.uid}/stores`);
             const storesSnap = await getDocs(storesCol);
             const storesData = storesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Store));
@@ -86,7 +86,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setActiveStoreState(lastActive || storesData[0] || null);
 
           } else if (roleData.role === 'store' && roleData.storeId && roleData.adminId) {
-            // Store user: fetch their single assigned store
             const storeRef = doc(firestore, `users/${roleData.adminId}/stores`, roleData.storeId);
             const storeSnap = await getDoc(storeRef);
             if (storeSnap.exists()) {
@@ -96,11 +95,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } else {
-            // This might be a brand new admin user, role doc not created yet.
-            // Login flow handles this, but we can default to admin for now.
-             setUserRole('admin');
+             setUserRole('admin'); // Fallback for new admin
         }
-        // setLoading(false); // Data loading will handle this
+         setLoading(false);
       }, (error) => {
         console.error("User role listener error", error);
         setLoading(false);
@@ -118,21 +115,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [authUser, firestore, setActiveStore]);
 
- const getAdminId = useCallback(() => {
-    if (userRole === 'admin' && authUser) {
-      return authUser.uid;
-    }
-    if (userRole === 'store') {
-        // This is a bit of a hack, we need to get the adminId from the user_roles doc
-        // a better way would be to store it in the context
-        const roleDoc = doc(firestore, 'user_roles', authUser!.uid);
-        return getDoc(roleDoc).then(doc => (doc.data() as UserRole)?.adminId || null);
-    }
-    return null;
-  }, [userRole, authUser, firestore]);
 
-
-  // All data management functions need to know the correct adminId
   const withAdminId = async <T>(func: (adminId: string) => Promise<T>): Promise<T | undefined> => {
     if (!authUser || !firestore || !userRole) return;
 
@@ -149,33 +132,48 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     console.error("Could not determine admin ID for operation.");
-    return undefined;
+    throw new Error("Could not determine admin ID for operation.");
   };
-
 
   const addStore = useCallback(async (storeData: Omit<Store, 'id' | 'userId'>) => {
     await withAdminId(async (adminId) => {
-      // 1. Create a new Firebase Auth user for the store
-      const userCredential = await createUserWithEmailAndPassword(auth, storeData.email, storeData.password);
-      const storeUser = userCredential.user;
+        // Create a secondary Firebase app instance for user creation to avoid login state change
+        const secondaryAppName = 'user-creation-app';
+        let secondaryApp;
+        try {
+            secondaryApp = getApp(secondaryAppName);
+        } catch (error) {
+            secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+        }
+        const secondaryAuth = getAuth(secondaryApp);
 
-      // 2. Add the store document to the admin's subcollection
-      const coll = collection(firestore, `users/${adminId}/stores`);
-      const docRef = await addDoc(coll, { ...storeData, userId: adminId });
-      
-      // 3. Create the role document linking the store user's UID to the store
-      const roleRef = doc(firestore, 'user_roles', storeUser.uid);
-      await setDoc(roleRef, {
-        uid: storeUser.uid,
-        role: 'store',
-        storeId: docRef.id,
-        adminId: adminId,
-      });
+        try {
+            // 1. Create a new Firebase Auth user for the store in the secondary app
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, storeData.email, storeData.password);
+            const storeUser = userCredential.user;
 
-      // After adding, set it as active
-      setActiveStore({ id: docRef.id, userId: adminId, ...storeData });
+            // 2. Add the store document to the admin's subcollection
+            const coll = collection(firestore, `users/${adminId}/stores`);
+            const docRef = await addDoc(coll, { ...storeData, userId: adminId });
+            
+            // 3. Create the role document linking the store user's UID to the store
+            const roleRef = doc(firestore, 'user_roles', storeUser.uid);
+            await setDoc(roleRef, {
+                uid: storeUser.uid,
+                role: 'store',
+                storeId: docRef.id,
+                adminId: adminId,
+            });
+
+            // After adding, set it as active
+            setActiveStore({ id: docRef.id, userId: adminId, ...storeData });
+        } finally {
+            // Clean up the secondary app instance
+            await deleteApp(secondaryApp);
+        }
     });
-  }, [auth, firestore, setActiveStore, withAdminId]);
+}, [firestore, setActiveStore, withAdminId]);
+
 
   const updateStore = useCallback(async (storeData: Pick<Store, 'id'> & Partial<Omit<Store, 'id' | 'userId'>>) => {
      await withAdminId(async (adminId) => {
@@ -301,74 +299,68 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for active store data
   useEffect(() => {
-    if (!authUser || !firestore || !userRole) {
+    if (!activeStore || !authUser || !firestore) {
+      setTransactions([]);
+      setCategories([]);
+      setUsers([]);
+      if (!authUser) setLoading(false);
+      return;
+    }
+  
+    setLoading(true);
+  
+    const getAdminAndSubscribe = async () => {
+      let adminId;
+      if (userRole === 'admin') {
+        adminId = authUser.uid;
+      } else {
+        const roleDocSnap = await getDoc(doc(firestore, 'user_roles', authUser.uid));
+        adminId = roleDocSnap.data()?.adminId;
+      }
+  
+      if (!adminId) {
         setLoading(false);
         return;
-    }
+      }
+  
+      const basePath = `users/${adminId}/stores/${activeStore.id}`;
+  
+      const unsubExpenses = onSnapshot(collection(firestore, `${basePath}/expenses`), (snapshot) => {
+        const expenses = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
+        setTransactions(prev => [...prev.filter(t => t.type !== 'expense'), ...expenses]);
+      });
+  
+      const unsubIncomes = onSnapshot(collection(firestore, `${basePath}/incomes`), (snapshot) => {
+        const incomes = snapshot.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
+        setTransactions(prev => [...prev.filter(t => t.type !== 'income'), ...incomes]);
+      });
+  
+      const unsubCategories = onSnapshot(collection(firestore, `${basePath}/categories`), (snapshot) => {
+        setCategories(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Category[]);
+      });
+  
+      const unsubUsers = onSnapshot(collection(firestore, `${basePath}/app_users`), (snapshot) => {
+        setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as User[]);
+      });
 
-    if (!activeStore) {
-        setTransactions([]);
-        setCategories([]);
-        setUsers([]);
-        setLoading(false);
-        return;
-    }
-
-    let unsubscribes: (() => void)[] = [];
-
-    const fetchData = async () => {
-        setLoading(true);
-        const adminId = userRole === 'admin' ? authUser.uid : (await getDoc(doc(firestore, `user_roles/${authUser.uid}`))).data()?.adminId;
-
-        if (!adminId) {
-            setLoading(false);
-            return;
-        }
-
-        const basePath = `users/${adminId}/stores/${activeStore.id}`;
-        
-        // Local states for batching updates
-        let localIncomes: Transaction[] = [];
-        let localExpenses: Transaction[] = [];
-
-        const incomesCol = collection(firestore, `${basePath}/incomes`);
-        const expensesCol = collection(firestore, `${basePath}/expenses`);
-        const categoriesCol = collection(firestore, `${basePath}/categories`);
-        const usersCol = collection(firestore, `${basePath}/app_users`);
-
-        const combineTransactions = () => {
-            setTransactions([...localIncomes, ...localExpenses]);
-        };
-
-        unsubscribes = [
-            onSnapshot(incomesCol, snapshot => {
-                localIncomes = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'income' })) as Transaction[];
-                combineTransactions();
-            }, console.error),
-            onSnapshot(expensesCol, snapshot => {
-                localExpenses = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'expense' })) as Transaction[];
-                combineTransactions();
-            }, console.error),
-            onSnapshot(categoriesCol, snapshot => {
-                setCategories(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Category[]);
-            }, console.error),
-            onSnapshot(usersCol, snapshot => {
-                setUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as User[]);
-            }, console.error),
-        ];
-        
-        // Set initial loading to false after a delay
-        // In a real app, you might use Promise.all on getDocs for a more accurate initial load state
-        const loadingTimer = setTimeout(() => setLoading(false), 1500);
-        unsubscribes.push(() => clearTimeout(loadingTimer));
+      // Give it a moment to fetch initial data
+      const timer = setTimeout(() => setLoading(false), 500);
+  
+      return () => {
+        unsubExpenses();
+        unsubIncomes();
+        unsubCategories();
+        unsubUsers();
+        clearTimeout(timer);
+      };
     };
-
-    fetchData();
-
+  
+    const unsubscribePromise = getAdminAndSubscribe();
+  
     return () => {
-        unsubscribes.forEach(unsub => unsub());
+      unsubscribePromise.then(unsub => unsub && unsub());
     };
-}, [authUser, firestore, activeStore, userRole]);
+  }, [activeStore, authUser, firestore, userRole]);
   
 
   const value: AppContextType = {
@@ -409,3 +401,5 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+    
