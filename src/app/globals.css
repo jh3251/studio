@@ -71,4 +71,7 @@
     [data-sidebar="menu-button"][data-active="true"] {
         @apply bg-accent text-destructive;
     }
+    .dark [data-sidebar="menu-button"][data-active="true"] {
+        @apply text-green-500;
+    }
 }
