@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Check, ChevronsUpDown, PlusCircle, Store as StoreIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
