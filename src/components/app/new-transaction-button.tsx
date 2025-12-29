@@ -14,12 +14,12 @@ export function NewTransactionButton() {
 
   return (
     <>
-      <div className="flex justify-center mb-4">
-        <Button onClick={() => setIsSheetOpen(true)} disabled={!canAddTransaction} size="lg">
+      
+        <Button onClick={() => setIsSheetOpen(true)} disabled={!canAddTransaction}>
           <PlusCircle className="mr-2 h-4 w-4" />
           New Transaction
         </Button>
-      </div>
+      
       <AddTransactionSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
     </>
   );
