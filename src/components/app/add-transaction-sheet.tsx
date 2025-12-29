@@ -202,13 +202,13 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="expense" />
+                          <RadioGroupItem value="expense" disabled={isEditMode} />
                         </FormControl>
                         <FormLabel className="font-normal text-red-600 dark:text-red-500">Cash Out</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="income" />
+                          <RadioGroupItem value="income" disabled={isEditMode} />
                         </FormControl>
                         <FormLabel className="font-normal text-green-600 dark:text-green-500">Cash In</FormLabel>
                       </FormItem>
