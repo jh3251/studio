@@ -116,7 +116,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUsers([]);
       setLoading(false);
     }
-  }, [authUser, firestore]);
+  }, [authUser, firestore, setActiveStore]);
 
  const getAdminId = useCallback(() => {
     if (userRole === 'admin' && authUser) {
@@ -301,47 +301,74 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for active store data
   useEffect(() => {
-    if (authUser && firestore && activeStore && userRole) {
-      setLoading(true);
-      
-      withAdminId(async (adminId) => {
+    if (!authUser || !firestore || !userRole) {
+        setLoading(false);
+        return;
+    }
+
+    if (!activeStore) {
+        setTransactions([]);
+        setCategories([]);
+        setUsers([]);
+        setLoading(false);
+        return;
+    }
+
+    let unsubscribes: (() => void)[] = [];
+
+    const fetchData = async () => {
+        setLoading(true);
+        const adminId = userRole === 'admin' ? authUser.uid : (await getDoc(doc(firestore, `user_roles/${authUser.uid}`))).data()?.adminId;
+
+        if (!adminId) {
+            setLoading(false);
+            return;
+        }
+
         const basePath = `users/${adminId}/stores/${activeStore.id}`;
+        
+        // Local states for batching updates
+        let localIncomes: Transaction[] = [];
+        let localExpenses: Transaction[] = [];
+
         const incomesCol = collection(firestore, `${basePath}/incomes`);
         const expensesCol = collection(firestore, `${basePath}/expenses`);
         const categoriesCol = collection(firestore, `${basePath}/categories`);
         const usersCol = collection(firestore, `${basePath}/app_users`);
 
-        const unsubscribes = [
-          onSnapshot(incomesCol, snapshot => {
-            const incomeData = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'income' })) as Transaction[];
-            setTransactions(prev => [...prev.filter(t => t.type !== 'income' || t.storeId !== activeStore.id), ...incomeData]);
-          }, console.error),
-          onSnapshot(expensesCol, snapshot => {
-            const expenseData = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'expense' })) as Transaction[];
-            setTransactions(prev => [...prev.filter(t => t.type !== 'expense' || t.storeId !== activeStore.id), ...expenseData]);
-          }, console.error),
-          onSnapshot(categoriesCol, snapshot => {
-            setCategories(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Category[]);
-          }, console.error),
-          onSnapshot(usersCol, snapshot => {
-            setUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as User[]);
-          }, console.error)
+        const combineTransactions = () => {
+            setTransactions([...localIncomes, ...localExpenses]);
+        };
+
+        unsubscribes = [
+            onSnapshot(incomesCol, snapshot => {
+                localIncomes = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'income' })) as Transaction[];
+                combineTransactions();
+            }, console.error),
+            onSnapshot(expensesCol, snapshot => {
+                localExpenses = snapshot.docs.map(d => ({ id: d.id, ...d.data(), type: 'expense' })) as Transaction[];
+                combineTransactions();
+            }, console.error),
+            onSnapshot(categoriesCol, snapshot => {
+                setCategories(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Category[]);
+            }, console.error),
+            onSnapshot(usersCol, snapshot => {
+                setUsers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as User[]);
+            }, console.error),
         ];
         
-        // This is a rough way to handle loading state. A more robust solution
-        // might use Promise.all with getDocs for initial load.
-        setTimeout(() => setLoading(false), 1500);
+        // Set initial loading to false after a delay
+        // In a real app, you might use Promise.all on getDocs for a more accurate initial load state
+        const loadingTimer = setTimeout(() => setLoading(false), 1500);
+        unsubscribes.push(() => clearTimeout(loadingTimer));
+    };
 
-        return () => unsubscribes.forEach(unsub => unsub());
-      });
+    fetchData();
 
-    } else if (!activeStore) {
-      setTransactions([]);
-      setCategories([]);
-      setUsers([]);
-      setLoading(false);
-    }
-  }, [authUser, firestore, activeStore, userRole, withAdminId]);
+    return () => {
+        unsubscribes.forEach(unsub => unsub());
+    };
+}, [authUser, firestore, activeStore, userRole]);
   
 
   const value: AppContextType = {
@@ -352,9 +379,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addStore,
     updateStore,
     deleteStore,
-    transactions: activeStore ? transactions.filter(t => t.storeId === activeStore.id) : [],
-    categories: activeStore ? categories.filter(c => c.storeId === activeStore.id) : [],
-    users: activeStore ? users.filter(u => u.storeId === activeStore.id) : [],
+    transactions, // Return the combined and filtered transactions directly
+    categories,
+    users,
     addTransaction,
     updateTransaction,
     deleteTransaction,
