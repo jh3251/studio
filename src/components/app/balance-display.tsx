@@ -52,7 +52,7 @@ export function BalanceDisplay() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-500">
             <CardHeader className="flex flex-row items-center justify-center gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm">Total Balance</CardTitle>
                 <Wallet className="h-4 w-4 text-primary" />
@@ -61,7 +61,7 @@ export function BalanceDisplay() {
                 <div className="text-4xl font-bold text-primary">{formatCurrency(totalBalance)}</div>
             </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-in fade-in slide-in-from-bottom-5 duration-500" style={{ animationDelay: '100ms' }}>
             <CardContent className="p-4 space-y-3">
                  <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export function BalanceDisplay() {
             </CardContent>
         </Card>
       {userBalanceChunks.map((chunk, chunkIndex) => (
-        <Card key={chunkIndex}>
+        <Card key={chunkIndex} className="animate-in fade-in slide-in-from-bottom-5 duration-500" style={{ animationDelay: `${200 + chunkIndex * 100}ms` }}>
             <CardContent className="p-4 space-y-3">
             {chunk.map((user, userIndex) => (
                 <div key={user.name}>
