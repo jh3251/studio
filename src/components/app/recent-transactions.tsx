@@ -249,16 +249,6 @@ export function RecentTransactions() {
         <CardContent>
             <div className="min-h-[400px]">
                 <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead className="hidden sm:table-cell">Details</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="w-[40px] text-right">
-                        <span className="sr-only">Actions</span>
-                    </TableHead>
-                    </TableRow>
-                </TableHeader>
                 <TableBody>
                     {!activeStore ? (
                         <TableRow>
