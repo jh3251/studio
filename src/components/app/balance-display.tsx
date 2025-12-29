@@ -44,6 +44,9 @@ export function BalanceDisplay() {
   }, [transactions, users, activeStore]);
 
   const formatCurrency = (amount: number) => {
+    if (currency === 'BDT') {
+        return `৳${amount.toLocaleString('en-US')}`;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
@@ -95,7 +98,7 @@ export function BalanceDisplay() {
       </Card>
        <Card className="col-span-1 md:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-bold">Overall Balance</CardTitle>
+          <CardTitle className="text-sm">Overall Balance</CardTitle>
           <Wallet className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>

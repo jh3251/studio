@@ -238,6 +238,7 @@ export function AccountSettings() {
                                             <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
                                             <SelectItem value="GBP">GBP - British Pound</SelectItem>
                                             <SelectItem value="BDT">BDT - Bangladeshi Taka</SelectItem>
+                                            <SelectItem value="INR">INR - Indian Rupee</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

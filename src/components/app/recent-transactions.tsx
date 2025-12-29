@@ -114,6 +114,9 @@ export function RecentTransactions() {
   };
 
   const formatCurrency = (amount: number) => {
+    if (currency === 'BDT') {
+        return `৳${amount.toLocaleString('en-US')}`;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
