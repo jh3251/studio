@@ -236,10 +236,10 @@ export function RecentTransactions() {
           <div className="flex items-center justify-center">
             {sortedTransactions.length > 0 && (
               <div className="flex items-center gap-2">
-                 <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                 <Button size="sm" onClick={handleExportPDF}>
                   <FileDown className="mr-2 h-4 w-4" /> Export to PDF
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
+                <Button variant="destructive" size="sm" onClick={() => setIsClearAllDialogOpen(true)}>
                   <Eraser className="mr-2 h-4 w-4" /> Clear All
                 </Button>
               </div>
