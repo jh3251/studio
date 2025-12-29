@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import React from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ThemeToggle } from '../theme-toggle';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: 'Display name must be at least 2 characters.' }).optional(),
@@ -212,6 +213,18 @@ export function AccountSettings() {
         </CardContent>
       </Card>
       <div className="flex flex-col gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>Customize the look and feel of the app.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label>Theme</Label>
+                    <ThemeToggle />
+                </div>
+            </CardContent>
+        </Card>
         <Card>
             <CardHeader>
                 <CardTitle>Currency</CardTitle>
