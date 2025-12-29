@@ -204,7 +204,7 @@ export function RecentTransactions() {
                                     </DropdownMenuItem>
                                      <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:bg-destructive/10">
+                                            <div className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive focus:bg-destructive/10" role="menuitem">
                                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
                                             </div>
                                         </AlertDialogTrigger>
