@@ -77,7 +77,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
       } else {
         form.reset({
-          userName: '',
+          userName: users[0]?.name || '',
           amount: undefined,
           type: 'expense',
           date: formatDateForInput(new Date()),
@@ -92,6 +92,10 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
 
   const onSubmit = async (data: TransactionFormValues) => {
      if (data.type === 'expense' && !data.categoryId) {
+      if (categories.length === 0) {
+        form.setError('categoryId', { type: 'manual', message: 'No categories available. Please create one first.' });
+        return;
+      }
       form.setError('categoryId', { type: 'manual', message: 'Please select a category for expenses.' });
       return;
     }
@@ -105,7 +109,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           id: transactionToEdit.id,
           date: dateAsISOString,
           originalType: transactionToEdit.type,
-          categoryId: data.type === 'expense' ? data.categoryId : '',
+          categoryId: data.type === 'expense' ? data.categoryId : undefined,
         });
         toast({
           title: 'Transaction updated',
@@ -115,7 +119,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         await addTransaction({
           ...data,
           date: dateAsISOString,
-          categoryId: data.type === 'expense' ? data.categoryId : '',
+          categoryId: data.type === 'expense' ? data.categoryId : undefined,
         });
         toast({
           title: 'Transaction added',
@@ -215,7 +219,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
+                          <SelectValue placeholder={categories.length > 0 ? "Select a category" : "No categories available"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

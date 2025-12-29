@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
 import type { Transaction, Category, User as AppUser, TransactionType, UserPreferences } from '@/lib/types';
@@ -108,7 +108,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (type === originalType) {
       const collectionName = type === 'income' ? 'incomes' : 'expenses';
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
-      await updateDocumentNonBlocking(docRef, data);
+      const updateData: Partial<Transaction> = { ...data };
+      if (type === 'income') {
+        updateData.categoryId = undefined;
+      }
+      await updateDocumentNonBlocking(docRef, updateData);
     } else {
         const batch = writeBatch(firestore);
         
@@ -120,7 +124,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const newDocRef = doc(firestore, `${basePath}/${newCollectionName}`, id);
         
         const { date, amount, userName, categoryId } = data;
-        const newDocData = { date, amount, userName, userId: authUser.uid, categoryId: type === 'expense' ? categoryId : '' };
+        const newDocData: Omit<Transaction, 'id' | 'type'> = { date, amount, userName, userId: authUser.uid };
+        if (type === 'expense') {
+          newDocData.categoryId = categoryId;
+        }
+        
         batch.set(newDocRef, newDocData);
         
         await batch.commit();
@@ -228,11 +236,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (snapshot.exists()) {
         const prefs = snapshot.data() as UserPreferences;
         if (prefs.currency) setCurrencyState(prefs.currency);
-      }
-    }, () => {
+      } else {
         // This is a new user, so create a default preferences doc.
-        const userPrefsRef = doc(firestore, `${userPath}/preferences`, 'user');
         setDocumentNonBlocking(userPrefsRef, { currency: 'USD' }, { merge: true });
+      }
     }));
 
     const expensesQuery = query(collection(firestore, `${userPath}/expenses`));
