@@ -30,6 +30,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOW-FROM *', // More permissive, use with caution
+          },
+        ],
+      },
+    ]
+  },
 };
 
 export default nextConfig;
