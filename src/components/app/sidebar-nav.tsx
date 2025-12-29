@@ -70,18 +70,15 @@ export function SidebarNav() {
       </div>
       <div className="flex-1 px-4">
         <SidebarMenu>
-          {navItems.map((item, index) => (
-            <React.Fragment key={item.href}>
-              <SidebarMenuItem>
-                <Link href={item.href} onClick={handleNavClick}>
-                  <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              {index < navItems.length - 1 && <SidebarSeparator className="my-1" />}
-            </React.Fragment>
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href} onClick={handleNavClick}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)} tooltip={item.label}>
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </div>
