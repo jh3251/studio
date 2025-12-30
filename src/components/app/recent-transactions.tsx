@@ -146,26 +146,29 @@ export function RecentTransactions() {
     doc.rect(0, 0, pageWidth, 35, 'F');
     
     // Sumbook Logo (drawn manually)
-    doc.setFillColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.rect(14, 10, 15, 15, 'F'); // White square background
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setDrawColor(whiteColor[0], whiteColor[1], whiteColor[2]);
     doc.setLineWidth(1.5);
+    // Bounding box for logo
+    doc.roundedRect(14, 10, 15, 15, 2, 2, 'FD'); // Fill with primary, draw with white
+    doc.setDrawColor(whiteColor[0], whiteColor[1], whiteColor[2]);
     // Dollar sign
     doc.path([
-      { x: 21.5, y: 12.5 },
-      { x: 21.5, y: 14.5 },
-      { x: 21.5, y: 22.5 },
-      { x: 21.5, y: 24.5 },
+        {op: 'm', x: 21.5, y: 12.5},
+        {op: 'l', x: 21.5, y: 22.5},
     ]).stroke();
     doc.path([
-      { x: 24, y: 15.5 },
-      { x: 19.5, y: 15.5 },
-      { x: 19.5, y: 15.5, c1x: 17.5, c1y: 15.5, c2x: 17.5, c2y: 18.5, type: 'c' },
-      { x: 19.5, y: 18.5 },
-      { x: 23, y: 18.5, type: 'l' },
-      { x: 23, y: 18.5, c1x: 25, c1y: 18.5, c2x: 25, c2y: 21.5, type: 'c'},
-      { x: 23, y: 21.5, type: 'l' },
-      { x: 18, y: 21.5, type: 'l' },
+        {op: 'm', x: 24, y: 15},
+        {op: 'c', x1: 24, y1: 14, x2: 23, y2: 14, x: 22.5, y: 14},
+        {op: 'l', x: 20, y: 14},
+        {op: 'c', x1: 19, y1: 14, x2: 19, y2: 15, x: 19, y: 15.5},
+        {op: 'l', x: 19, y: 17.5},
+        {op: 'c', x1: 19, y1: 18.5, x2: 20, y2: 18.5, x: 20.5, y: 18.5},
+        {op: 'l', x: 23, y: 18.5},
+        {op: 'c', x1: 24, y1: 18.5, x2: 24, y2: 19.5, x: 24, y: 20},
+        {op: 'l', x: 24, y: 21.5},
+        {op: 'c', x1: 24, y1: 22.5, x2: 23, y2: 22.5, x: 22.5, y: 22.5},
+        {op: 'l', x: 20, y: 22.5},
     ]).stroke();
     
     doc.setFontSize(18);
