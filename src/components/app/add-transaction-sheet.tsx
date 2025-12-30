@@ -46,7 +46,7 @@ const formatDateForInput = (date: Date | string) => {
 };
 
 export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }: AddTransactionSheetProps) {
-  const { categories, users, addTransaction, updateTransaction } = useAppContext();
+  const { categories, users, addTransaction, updateTransaction, loading } = useAppContext();
   const { toast } = useToast();
   const isEditMode = !!transactionToEdit;
 
@@ -57,17 +57,17 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
   const transactionType = form.watch('type');
 
   useEffect(() => {
-    if (isOpen && users.length === 0) {
-      toast({
-          variant: "destructive",
-          title: "No Users Available",
-          description: "Please create a user before adding a transaction.",
-      });
-      onOpenChange(false);
-      return;
-    }
-
     if (isOpen) {
+      if (!loading && users.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No Users Available",
+            description: "Please create a user before adding a transaction.",
+        });
+        onOpenChange(false);
+        return;
+      }
+
       const defaultValues = isEditMode && transactionToEdit ? {
         userName: transactionToEdit.userName || '',
         amount: transactionToEdit.amount || undefined,
@@ -83,8 +83,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
       };
       form.reset(defaultValues);
     }
-
-  }, [isOpen, transactionToEdit, isEditMode, users, form, toast, onOpenChange]);
+  }, [isOpen, transactionToEdit, isEditMode, users, form, toast, onOpenChange, loading]);
 
 
   const onSubmit = async (data: TransactionFormValues) => {
@@ -122,7 +121,6 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           title: 'Transaction updated',
           description: `Transaction updated successfully.`,
         });
-        // Force a page refresh after editing
         window.location.reload();
       } else {
         await addTransaction(transactionData);
