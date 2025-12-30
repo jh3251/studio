@@ -99,7 +99,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     try {
       const dateAsISOString = new Date(data.date).toISOString();
       
-      const transactionData: Omit<Transaction, 'id' | 'userId'> = {
+      const transactionData: Omit<Transaction, 'id' | 'userId' > = {
         userName: data.userName,
         amount: data.amount,
         type: data.type,
@@ -121,6 +121,9 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           title: 'Transaction updated',
           description: `Transaction updated successfully.`,
         });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
         await addTransaction(transactionData);
         toast({
