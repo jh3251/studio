@@ -69,7 +69,7 @@
 
 @layer components {
     [data-sidebar="menu-button"][data-active="true"] {
-        @apply bg-accent text-destructive;
+        @apply bg-accent text-primary;
     }
     .dark [data-sidebar="menu-button"][data-active="true"] {
         @apply text-green-500;
