@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
-import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, updateProfile } from 'firebase/auth';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, updateProfile } from 'firebase/auth';
 
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -22,11 +22,6 @@ const profileSchema = z.object({
   photoURL: z.string().url({ message: "Please enter a valid URL." }).or(z.literal("")).optional(),
 });
 
-const emailSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  currentPasswordForEmail: z.string().min(1, { message: 'Current password is required.' }),
-});
-
 const passwordSchema = z.object({
   currentPasswordForPassword: z.string().min(1, { message: 'Current password is required.' }),
   newPassword: z.string().min(6, { message: 'New password must be at least 6 characters.' }),
@@ -41,7 +36,6 @@ const currencySchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
-type EmailFormValues = z.infer<typeof emailSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 type CurrencyFormValues = z.infer<typeof currencySchema>;
 
@@ -56,11 +50,6 @@ export function AccountSettings() {
       displayName: user?.displayName || '',
       photoURL: user?.photoURL || '',
     },
-  });
-
-  const emailForm = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: { email: user?.email || '' },
   });
 
   const passwordForm = useForm<PasswordFormValues>({
@@ -105,22 +94,6 @@ export function AccountSettings() {
       toast({
         variant: 'destructive',
         title: 'Error updating profile',
-        description: error.message || 'An unexpected error occurred.',
-      });
-    }
-  };
-
-  const onEmailSubmit = async (data: EmailFormValues) => {
-    if (!user) return;
-    try {
-      await reauthenticate(data.currentPasswordForEmail);
-      await updateEmail(user, data.email);
-      emailForm.reset({ ...data, currentPasswordForEmail: '' });
-      toast({ title: 'Email Updated', description: 'Your email address has been successfully updated.' });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error updating email',
         description: error.message || 'An unexpected error occurred.',
       });
     }
@@ -251,48 +224,6 @@ export function AccountSettings() {
                         </Button>
                     </form>
                 </Form>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-            <CardTitle>Update Email</CardTitle>
-            <CardDescription>Change the email address for your account.</CardDescription>
-            </CardHeader>
-            <CardContent>
-            <Form {...emailForm}>
-                <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
-                <FormField
-                    control={emailForm.control}
-                    name="email"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>New Email</FormLabel>
-                        <FormControl>
-                        <Input type="email" placeholder="new.email@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={emailForm.control}
-                    name="currentPasswordForEmail"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <Button type="submit" disabled={emailForm.formState.isSubmitting}>
-                    {emailForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Update Email
-                </Button>
-                </form>
-            </Form>
             </CardContent>
         </Card>
       </div>
