@@ -146,12 +146,13 @@ export function RecentTransactions() {
     doc.rect(0, 0, pageWidth, 35, 'F');
     
     // Sumbook Logo (drawn manually)
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setFillColor(whiteColor[0], whiteColor[1], whiteColor[2]);
     doc.setDrawColor(whiteColor[0], whiteColor[1], whiteColor[2]);
     doc.setLineWidth(1.5);
-    // Bounding box for logo
-    doc.roundedRect(14, 10, 15, 15, 2, 2, 'FD'); // Fill with primary, draw with white
-    doc.setDrawColor(whiteColor[0], whiteColor[1], whiteColor[2]);
+    // Bounding box for logo (white filled on primary background)
+    doc.roundedRect(14, 10, 15, 15, 2, 2, 'F');
+    
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     // Dollar sign
     doc.path([
         {op: 'm', x: 21.5, y: 12.5},
@@ -181,7 +182,7 @@ export function RecentTransactions() {
     let userDetailsY = 15;
     if (authUser?.displayName) {
         doc.text(authUser.displayName, pageWidth - 14, userDetailsY, { align: 'right' });
-        userDetailsY += 6;
+        userDetailsY += 5;
     }
     if (address) {
         const addressLines = doc.splitTextToSize(address, 60);
