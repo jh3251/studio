@@ -63,9 +63,12 @@ export function RecentTransactions() {
       await deleteTransaction(transaction.id, transaction.type);
       toast({
         title: 'Transaction Deleted',
-        description: `Transaction deleted successfully.`,
+        description: `Transaction deleted successfully. The page will refresh shortly.`,
         variant: 'destructive'
       });
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
        toast({
         variant: "destructive",

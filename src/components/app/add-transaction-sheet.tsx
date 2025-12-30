@@ -119,7 +119,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         toast({
           title: 'Transaction updated',
-          description: `Transaction updated successfully.`,
+          description: `Transaction updated successfully. The page will refresh shortly.`,
         });
         setTimeout(() => {
           window.location.reload();
