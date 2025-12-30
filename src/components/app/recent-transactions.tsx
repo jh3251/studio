@@ -155,13 +155,12 @@ export function RecentTransactions() {
 
     const formatCurrencyForPDF = (amount: number) => {
         if (currency === 'BDT') {
-            return `${amount.toLocaleString('en-US')} BDT`;
+            return `৳${amount.toLocaleString('en-US')}`;
         }
-         const formatted = new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: currency,
         }).format(amount);
-        return formatted.replace(/[\$\€\¥\£\৳]/, currency + ' ');
     };
     
     // --- Summary Section ---
@@ -414,5 +413,7 @@ export function RecentTransactions() {
     </>
   );
 }
+
+    
 
     
