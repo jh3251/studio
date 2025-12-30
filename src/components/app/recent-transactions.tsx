@@ -148,7 +148,7 @@ export function RecentTransactions() {
     // Sumbook Logo
     const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="white" /><path d="M15 8.5A2.5 2.5 0 0 0 12.5 6h-3A2.5 2.5 0 0 0 7 8.5v0A2.5 2.5 0 0 0 9.5 11h5A2.5 2.5 0 0 1 17 13.5v0A2.5 2.5 0 0 1 14.5 16h-3a2.5 2.5 0 0 1-2.5-2.5" stroke="rgb(${primaryColor.join(',')})" stroke-width="2.5" fill="none" /></svg>`;
     const logoBase64 = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
-    doc.addImage(logoBase64, 'svg', 14, 10, 15, 15);
+    doc.addImage(logoBase64, 'SVG', 14, 10, 15, 15);
 
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
@@ -420,3 +420,5 @@ export function RecentTransactions() {
     </>
   );
 }
+
+    
