@@ -111,27 +111,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     await addDocumentNonBlocking(coll, { ...data, userId: authUser.uid });
   }, [basePath, firestore, authUser]);
 
-  const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'>) => {
+  const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId'> & { originalType?: TransactionType }) => {
     if (!basePath || !firestore || !authUser) return;
     const { id, type, originalType, ...data } = transaction;
+
+    const transactionPayload = {
+      userName: data.userName,
+      amount: data.amount,
+      date: data.date,
+      ...(type === 'expense' && { categoryId: data.categoryId }),
+    };
 
     if (type === originalType) {
       // Type hasn't changed, just update the document in place
       const collectionName = type === 'income' ? 'incomes' : 'expenses';
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
-
-      // Explicitly create the update object with correct fields
-      const updateData: Partial<Transaction> = {
-        userName: data.userName,
-        amount: data.amount,
-        date: data.date,
-      };
-
-      if (type === 'expense') {
-        updateData.categoryId = data.categoryId;
-      }
-
-      await updateDocumentNonBlocking(docRef, updateData);
+      await updateDocumentNonBlocking(docRef, transactionPayload);
     } else {
         // Type has changed. Delete the old document and create a new one.
         const batch = writeBatch(firestore);
@@ -141,21 +136,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const oldDocRef = doc(firestore, `${basePath}/${oldCollectionName}`, id);
         batch.delete(oldDocRef);
 
-        // 2. Create a new document in the new collection
+        // 2. Create a new document in the new collection with the correct payload
         const newCollectionName = type === 'income' ? 'incomes' : 'expenses';
         const newDocRef = doc(collection(firestore, `${basePath}/${newCollectionName}`));
         
-        const newDocData: Omit<Transaction, 'id' | 'userId' | 'type'> = {
-          userName: data.userName,
-          amount: data.amount,
-          date: data.date,
-        };
-        
-        if (type === 'expense') {
-          newDocData.categoryId = data.categoryId;
-        }
-        
-        batch.set(newDocRef, { ...newDocData, userId: authUser.uid });
+        batch.set(newDocRef, { ...transactionPayload, userId: authUser.uid });
         
         await batch.commit();
     }
