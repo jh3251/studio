@@ -99,11 +99,18 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
 
     try {
       const dateAsISOString = new Date(data.date).toISOString();
-      const transactionData = {
-        ...data,
+      
+      const transactionData: Omit<Transaction, 'id' | 'userId'> = {
+        userName: data.userName,
+        amount: data.amount,
+        type: data.type,
         date: dateAsISOString,
-        categoryId: data.type === 'expense' ? data.categoryId : undefined,
       };
+
+      if (data.type === 'expense') {
+        transactionData.categoryId = data.categoryId;
+      }
+      
 
       if (isEditMode && transactionToEdit) {
         await updateTransaction({ 
