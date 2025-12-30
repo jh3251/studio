@@ -6,6 +6,7 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from '@/compon
 import { SidebarNav } from '@/components/app/sidebar-nav';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function AppLayout({
   children,
@@ -47,6 +48,7 @@ export default function AppLayout({
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <SidebarTrigger className="sm:hidden" />
             <div className="flex-1" />
+            <ThemeToggle />
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
