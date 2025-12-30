@@ -43,7 +43,7 @@ import { Label } from '../ui/label';
 import { useUser } from '@/firebase';
 
 export function RecentTransactions() {
-  const { transactions, categories, deleteTransaction, clearAllTransactions, currency, financialSummary } = useAppContext();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, currency, address, financialSummary } = useAppContext();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
@@ -150,6 +150,7 @@ export function RecentTransactions() {
     doc.rect(14, 10, 15, 15, 'F'); // White square background
     doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setLineWidth(1.5);
+    // Dollar sign
     doc.path([
       { x: 21.5, y: 12.5 },
       { x: 21.5, y: 14.5 },
@@ -174,11 +175,14 @@ export function RecentTransactions() {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
+    let userDetailsY = 15;
     if (authUser?.displayName) {
-        doc.text(authUser.displayName, pageWidth - 14, 15, { align: 'right' });
+        doc.text(authUser.displayName, pageWidth - 14, userDetailsY, { align: 'right' });
+        userDetailsY += 6;
     }
-    if (authUser?.email) {
-        doc.text(authUser.email, pageWidth - 14, 21, { align: 'right' });
+    if (address) {
+        const addressLines = doc.splitTextToSize(address, 60);
+        doc.text(addressLines, pageWidth - 14, userDetailsY, { align: 'right' });
     }
 
     finalY = 45;

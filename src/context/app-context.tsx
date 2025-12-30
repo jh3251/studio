@@ -24,8 +24,10 @@ interface AppContextType {
   categories: Category[];
   users: AppUser[];
   currency: string;
+  address: string;
   financialSummary: FinancialSummary;
   setCurrency: (currency: string) => Promise<void>;
+  setAddress: (address: string) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' >) => Promise<void>;
   updateTransaction: (transaction: Omit<Transaction, 'userId'>) => Promise<void>;
   deleteTransaction: (transactionId: string, type: TransactionType) => Promise<void>;
@@ -48,6 +50,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [currency, setCurrencyState] = useState<string>('USD');
+  const [address, setAddressState] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [localExpenses, setLocalExpenses] = useState<Transaction[]>([]);
   const [localIncomes, setLocalIncomes] = useState<Transaction[]>([]);
@@ -93,6 +96,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setCurrencyState(newCurrency);
   }, [basePath, firestore]);
 
+  const setAddress = useCallback(async (newAddress: string) => {
+    if (!basePath || !firestore) return;
+    const userPrefsRef = doc(firestore, `${basePath}/preferences/user`);
+    await setDocumentNonBlocking(userPrefsRef, { address: newAddress }, { merge: true });
+    setAddressState(newAddress);
+  }, [basePath, firestore]);
+
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId'>) => {
     if (!basePath || !authUser) return;
     const { type, ...data } = transaction;
@@ -110,7 +120,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
       const updateData: Partial<Transaction> = { ...data };
       if (type === 'income') {
-        updateData.categoryId = undefined;
+        delete updateData.categoryId;
       }
       await updateDocumentNonBlocking(docRef, updateData);
     } else {
@@ -124,7 +134,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const newDocRef = doc(firestore, `${basePath}/${newCollectionName}`, id);
         
         const { date, amount, userName, categoryId } = data;
-        const newDocData: Omit<Transaction, 'id' | 'type'> = { date, amount, userName, userId: authUser.uid };
+        const newDocData: Omit<Transaction, 'id' | 'type' | 'originalType'> = { date, amount, userName, userId: authUser.uid };
         if (type === 'expense') {
           newDocData.categoryId = categoryId;
         }
@@ -223,6 +233,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setCategories([]);
       setUsers([]);
       setCurrencyState('USD');
+      setAddressState('');
       setLoading(false);
       return;
     }
@@ -236,9 +247,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (snapshot.exists()) {
         const prefs = snapshot.data() as UserPreferences;
         if (prefs.currency) setCurrencyState(prefs.currency);
+        if (prefs.address) setAddressState(prefs.address);
       } else {
         // This is a new user, so create a default preferences doc.
-        setDocumentNonBlocking(userPrefsRef, { currency: 'USD' }, { merge: true });
+        setDocumentNonBlocking(userPrefsRef, { currency: 'USD', address: '' }, { merge: true });
       }
     }));
 
@@ -285,8 +297,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     categories,
     users,
     currency,
+    address,
     financialSummary,
     setCurrency,
+    setAddress,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -305,9 +319,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     categories,
     users,
     currency,
+    address,
     financialSummary,
     loading,
     setCurrency,
+    setAddress,
     addTransaction,
     updateTransaction,
     deleteTransaction,

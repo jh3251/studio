@@ -35,4 +35,5 @@ export interface Store {
 
 export interface UserPreferences {
   currency: string;
+  address?: string;
 }

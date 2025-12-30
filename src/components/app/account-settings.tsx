@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import React from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Textarea } from '../ui/textarea';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: 'Display name must be at least 2 characters.' }).optional(),
@@ -35,14 +36,19 @@ const currencySchema = z.object({
     currency: z.string().min(3, { message: 'Currency is required.' }),
 });
 
+const addressSchema = z.object({
+    address: z.string().optional(),
+});
+
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 type CurrencyFormValues = z.infer<typeof currencySchema>;
+type AddressFormValues = z.infer<typeof addressSchema>;
 
 export function AccountSettings() {
   const { user } = useUser();
   const { toast } = useToast();
-  const { currency, setCurrency } = useAppContext();
+  const { currency, setCurrency, address, setAddress } = useAppContext();
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -62,10 +68,21 @@ export function AccountSettings() {
       currency: currency,
     },
   });
+  
+  const addressForm = useForm<AddressFormValues>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+        address: address || '',
+    },
+  });
 
    React.useEffect(() => {
     currencyForm.reset({ currency });
   }, [currency, currencyForm]);
+
+  React.useEffect(() => {
+    addressForm.reset({ address });
+    }, [address, addressForm]);
 
   const getInitials = (name?: string | null) => {
     if (!name) return '';
@@ -127,63 +144,76 @@ export function AccountSettings() {
             });
         }
     };
+    
+    const onAddressSubmit = async (data: AddressFormValues) => {
+        try {
+            await setAddress(data.address || '');
+            toast({ title: 'Address Updated', description: 'Your address has been successfully updated.' });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error updating address',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        }
+    }
 
   const watchedPhotoUrl = profileForm.watch('photoURL');
   const displayAvatar = watchedPhotoUrl || user?.photoURL;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader>
-          <CardTitle>Update Profile</CardTitle>
-          <CardDescription>Manage your public profile information.</CardDescription>
-        </CardHeader>
-        <CardContent>
-           <Form {...profileForm}>
-            <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-               <div className="flex flex-col items-center gap-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={displayAvatar || undefined} />
-                    <AvatarFallback className="text-3xl">{getInitials(user?.displayName)}</AvatarFallback>
-                  </Avatar>
-              </div>
+        <Card>
+            <CardHeader>
+            <CardTitle>Update Profile</CardTitle>
+            <CardDescription>Manage your public profile information.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Form {...profileForm}>
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                <div className="flex flex-col items-center gap-4">
+                    <Avatar className="h-24 w-24">
+                        <AvatarImage src={displayAvatar || undefined} />
+                        <AvatarFallback className="text-3xl">{getInitials(user?.displayName)}</AvatarFallback>
+                    </Avatar>
+                </div>
 
-              <FormField
-                control={profileForm.control}
-                name="displayName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Display Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your Name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={profileForm.control}
-                name="photoURL"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Photo URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/avatar.png" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                    control={profileForm.control}
+                    name="displayName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Display Name</FormLabel>
+                        <FormControl>
+                        <Input placeholder="Your Name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                
+                <FormField
+                    control={profileForm.control}
+                    name="photoURL"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Photo URL</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://example.com/avatar.png" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
 
-              <Button type="submit" disabled={profileForm.formState.isSubmitting}>
-                {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Profile
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                    {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Profile
+                </Button>
+                </form>
+            </Form>
+            </CardContent>
+        </Card>
       <div className="flex flex-col gap-6">
         <Card>
             <CardHeader>
@@ -221,6 +251,35 @@ export function AccountSettings() {
                          <Button type="submit" disabled={currencyForm.formState.isSubmitting}>
                             {currencyForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Update Currency
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Address</CardTitle>
+                <CardDescription>Set your address for reports.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...addressForm}>
+                    <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
+                        <FormField
+                            control={addressForm.control}
+                            name="address"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Address</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="123 Main St, Anytown, USA" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <Button type="submit" disabled={addressForm.formState.isSubmitting}>
+                            {addressForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Address
                         </Button>
                     </form>
                 </Form>
