@@ -128,6 +128,30 @@ export function RecentTransactions() {
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
+    const pageHeight = doc.internal.pageSize.height;
+    const pageWidth = doc.internal.pageSize.width;
+    let finalY = 0;
+
+    // Colors (match globals.css if possible, using RGB for jsPDF)
+    const primaryColor = [34, 113, 233]; // Equivalent to HSL 221 83% 53%
+    const mutedColor = [100, 116, 139];   // slate-500
+    const whiteColor = [255, 255, 255];
+    const redColor = [220, 38, 38];
+    const greenColor = [22, 163, 74];
+    
+    // Header
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(whiteColor[0], whiteColor[1], whiteColor[2]);
+    doc.text('Financial Report', 14, 18);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+
+
+    finalY = 45; // Start content below header
 
     const formatCurrencyForPDF = (amount: number) => {
         if (currency === 'BDT') {
@@ -140,41 +164,42 @@ export function RecentTransactions() {
         return formatted.replace(/[\$\€\¥\£\৳]/, currency + ' ');
     };
     
-    const title = `Transaction Report`;
-    const date = `Generated on: ${new Date().toLocaleDateString()}`;
-    let finalY = 0;
+    // --- Summary Section ---
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text("Summary", 14, finalY);
+    finalY += 2;
 
-    doc.setFontSize(18);
-    doc.text(title, 14, 22);
-    doc.setFontSize(11);
-    doc.text(date, 14, 30);
-    
-    doc.setFontSize(14);
-    doc.text("Financial Summary", 14, 40);
-    
-    const summaryBody: (string|number)[][] = [
-      ["Total Balance", formatCurrencyForPDF(financialSummary.totalBalance)],
-      ["Total Cash In", formatCurrencyForPDF(financialSummary.totalIncome)],
-      ["Total Cash Out", formatCurrencyForPDF(financialSummary.totalExpense)],
+    const summaryBody = [
+        ['Total Balance', formatCurrencyForPDF(financialSummary.totalBalance)],
+        ['Total Cash In', formatCurrencyForPDF(financialSummary.totalIncome)],
+        ['Total Cash Out', formatCurrencyForPDF(financialSummary.totalExpense)],
     ];
-
     autoTable(doc, {
-      body: summaryBody,
-      startY: 45,
-      theme: 'grid',
-      styles: { fontSize: 10, cellPadding: 2 },
-      columnStyles: {
-        0: { fontStyle: 'bold' },
-        1: { halign: 'right' }
-      }
+        body: summaryBody,
+        startY: finalY,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3, lineWidth: 0.1, lineColor: [221, 221, 221] },
+        columnStyles: {
+            0: { fontStyle: 'bold' },
+            1: { halign: 'right' }
+        },
+        didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 0) {
+              data.cell.styles.fillColor = [248, 250, 252]; // Cool gray 50
+            }
+        }
     });
-
-    finalY = (doc as any).lastAutoTable.finalY + 10;
+    finalY = (doc as any).lastAutoTable.finalY + 15;
     
+    // --- User Balances Section ---
     if (financialSummary.userBalances.length > 0) {
-      doc.setFontSize(14);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
       doc.text("User Balances", 14, finalY);
-      
+      finalY += 2;
+
       const userBalanceBody = financialSummary.userBalances.map(ub => [
         ub.name,
         formatCurrencyForPDF(ub.balance),
@@ -183,45 +208,73 @@ export function RecentTransactions() {
       autoTable(doc, {
         head: [["User", "Balance"]],
         body: userBalanceBody,
-        startY: finalY + 5,
+        startY: finalY,
         theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185] }, 
-        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [63, 63, 70], fontStyle: 'bold' }, // Zinc 700
+        styles: { fontSize: 10, cellPadding: 3 },
         columnStyles: {
           1: { halign: 'right' }
+        },
+        didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 1) {
+                const rawValue = financialSummary.userBalances[data.row.index].balance;
+                data.cell.styles.textColor = rawValue >= 0 ? greenColor : redColor;
+            }
         }
       });
-      finalY = (doc as any).lastAutoTable.finalY + 10;
+      finalY = (doc as any).lastAutoTable.finalY + 15;
     }
+
+    // --- Transaction History Section ---
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Transaction History", 14, finalY);
+    finalY += 2;
 
     const tableColumn = ["Date", "User", "Details", "Amount"];
     const tableRows: (string|number)[][] = [];
-
     sortedTransactions.forEach(t => {
       const transactionData = [
-        new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        new Date(t.date).toLocaleDateString('en-GB'),
         t.userName,
         t.type === 'income' ? 'Cash In' : getCategoryName(t.categoryId),
-        `${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString('en-US')} ${currency}`,
+        `${t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
       ];
       tableRows.push(transactionData);
     });
-    
-    doc.setFontSize(14);
-    doc.text("Transaction History", 14, finalY);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: finalY + 5,
-      headStyles: { fillColor: [22, 163, 74] }, 
-      styles: { halign: 'center' },
+      startY: finalY,
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor, fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 3, lineWidth: 0.1, lineColor: [221, 221, 221] },
       columnStyles: {
         3: { halign: 'right' }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+            const transaction = sortedTransactions[data.row.index];
+            data.cell.styles.textColor = transaction.type === 'income' ? greenColor : redColor;
+            data.cell.styles.fontStyle = 'bold';
+        }
       }
     });
 
-    doc.save(`transactions-${new Date().toISOString().split('T')[0]}.pdf`);
+    finalY = (doc as any).lastAutoTable.finalY;
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text('SumBook | Your Financial Companion', 14, pageHeight - 10);
+    }
+    
+    doc.save(`SumBook-Report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   return (
