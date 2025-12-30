@@ -122,14 +122,16 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
           title: 'Transaction updated',
           description: `Transaction updated successfully.`,
         });
+        // Force a page refresh after editing
+        window.location.reload();
       } else {
         await addTransaction(transactionData);
         toast({
           title: 'Transaction added',
           description: `A new transaction has been added.`,
         });
+        onOpenChange(false);
       }
-      onOpenChange(false);
     } catch (error) {
        toast({
         variant: "destructive",
