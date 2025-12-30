@@ -145,34 +145,11 @@ export function RecentTransactions() {
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(0, 0, pageWidth, 35, 'F');
     
-    // Sumbook Logo (drawn manually)
-    doc.setFillColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.roundedRect(14, 10, 15, 15, 2, 2, 'F');
-    
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.setLineWidth(1.5);
-    // Dollar sign vertical bar
-    doc.line(21.5, 12.5, 21.5, 22.5); 
-    // Dollar sign S-curve
-    doc.lines([
-        [24, 15],
-        [22.5, 14],
-        [20, 14],
-        [19, 15.5],
-        [19, 17.5],
-        [20.5, 18.5],
-        [23, 18.5],
-        [24, 20],
-        [24, 21.5],
-        [22.5, 22.5],
-        [20, 22.5]
-    ], 0,0);
-    
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.text('Financial Report', 34, 18);
-    
+    doc.text('SumBook', 14, 22);
+
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     let userDetailsY = 15;
