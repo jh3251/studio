@@ -119,10 +119,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Type hasn't changed, just update the document in place
       const collectionName = type === 'income' ? 'incomes' : 'expenses';
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
-      const updateData: Partial<Transaction> = { ...data };
-      if (type === 'income') {
+
+      // Explicitly create the update object with correct fields
+      const updateData: Partial<Transaction> = {
+        userName: data.userName,
+        amount: data.amount,
+        date: data.date,
+      };
+
+      if (type === 'expense') {
+        updateData.categoryId = data.categoryId;
+      } else {
+        // Ensure categoryId is not part of an income update
         delete updateData.categoryId;
       }
+
       await updateDocumentNonBlocking(docRef, updateData);
     } else {
         // Type has changed. Delete the old document and create a new one.
