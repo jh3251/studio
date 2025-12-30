@@ -40,6 +40,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { useUser } from '@/firebase';
 
 export function RecentTransactions() {
   const { transactions, categories, deleteTransaction, clearAllTransactions, currency, financialSummary } = useAppContext();
@@ -49,6 +50,8 @@ export function RecentTransactions() {
   const [password, setPassword] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const { toast } = useToast();
+  const { user: authUser } = useUser();
+
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -132,9 +135,8 @@ export function RecentTransactions() {
     const pageWidth = doc.internal.pageSize.width;
     let finalY = 0;
 
-    // Colors (match globals.css if possible, using RGB for jsPDF)
-    const primaryColor = [34, 113, 233]; // Equivalent to HSL 221 83% 53%
-    const mutedColor = [100, 116, 139];   // slate-500
+    const primaryColor = [34, 113, 233]; 
+    const mutedColor = [100, 116, 139];
     const whiteColor = [255, 255, 255];
     const redColor = [220, 38, 38];
     const greenColor = [22, 163, 74];
@@ -142,16 +144,27 @@ export function RecentTransactions() {
     // Header
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(0, 0, pageWidth, 35, 'F');
-    doc.setFontSize(22);
+    
+    // Sumbook Logo
+    const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="white" /><path d="M15 8.5A2.5 2.5 0 0 0 12.5 6h-3A2.5 2.5 0 0 0 7 8.5v0A2.5 2.5 0 0 0 9.5 11h5A2.5 2.5 0 0 1 17 13.5v0A2.5 2.5 0 0 1 14.5 16h-3a2.5 2.5 0 0 1-2.5-2.5" stroke="rgb(${primaryColor.join(',')})" stroke-width="2.5" fill="none" /></svg>`;
+    const logoBase64 = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
+    doc.addImage(logoBase64, 'svg', 14, 10, 15, 15);
+
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.text('SumBook Financial Report', 14, 18);
-    doc.setFontSize(10);
+    doc.text('Financial Report', 34, 18);
+    
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+    if (authUser?.displayName) {
+        doc.text(authUser.displayName, pageWidth - 14, 15, { align: 'right' });
+    }
+    if (authUser?.email) {
+        doc.text(authUser.email, pageWidth - 14, 21, { align: 'right' });
+    }
 
-
-    finalY = 45; // Start content below header
+    finalY = 45;
 
     const formatCurrencyForPDF = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -161,7 +174,6 @@ export function RecentTransactions() {
         }).format(amount);
     };
     
-    // --- Summary Section ---
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(40, 40, 40);
@@ -169,7 +181,7 @@ export function RecentTransactions() {
     finalY += 2;
 
     const summaryBody = [
-        ['Total Balance', formatCurrencyForPDF(financialSummary.totalBalance)],
+        ['Balance', formatCurrencyForPDF(financialSummary.totalBalance)],
         ['Total Cash In', formatCurrencyForPDF(financialSummary.totalIncome)],
         ['Total Cash Out', formatCurrencyForPDF(financialSummary.totalExpense)],
     ];
@@ -184,13 +196,12 @@ export function RecentTransactions() {
         },
         didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 0) {
-              data.cell.styles.fillColor = [248, 250, 252]; // Cool gray 50
+              data.cell.styles.fillColor = [248, 250, 252]; 
             }
         }
     });
     finalY = (doc as any).lastAutoTable.finalY + 15;
     
-    // --- User Balances Section ---
     if (financialSummary.userBalances.length > 0) {
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
@@ -207,7 +218,7 @@ export function RecentTransactions() {
         body: userBalanceBody,
         startY: finalY,
         theme: 'striped',
-        headStyles: { fillColor: [63, 63, 70], fontStyle: 'bold' }, // Zinc 700
+        headStyles: { fillColor: [63, 63, 70], fontStyle: 'bold' }, 
         styles: { fontSize: 10, cellPadding: 3 },
         columnStyles: {
           1: { halign: 'right' }
@@ -222,7 +233,6 @@ export function RecentTransactions() {
       finalY = (doc as any).lastAutoTable.finalY + 15;
     }
 
-    // --- Transaction History Section ---
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text("Transaction History", 14, finalY);
@@ -261,7 +271,6 @@ export function RecentTransactions() {
 
     finalY = (doc as any).lastAutoTable.finalY;
 
-    // Footer
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -411,9 +420,3 @@ export function RecentTransactions() {
     </>
   );
 }
-
-    
-
-    
-
-    
