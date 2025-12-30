@@ -116,6 +116,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const { id, type, originalType, ...data } = transaction;
 
     if (type === originalType) {
+      // Type hasn't changed, just update the document in place
       const collectionName = type === 'income' ? 'incomes' : 'expenses';
       const docRef = doc(firestore, `${basePath}/${collectionName}`, id);
       const updateData: Partial<Transaction> = { ...data };
@@ -124,22 +125,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       await updateDocumentNonBlocking(docRef, updateData);
     } else {
+        // Type has changed. Delete the old document and create a new one.
         const batch = writeBatch(firestore);
         
+        // 1. Delete the old document
         const oldCollectionName = originalType === 'income' ? 'incomes' : 'expenses';
         const oldDocRef = doc(firestore, `${basePath}/${oldCollectionName}`, id);
         batch.delete(oldDocRef);
 
+        // 2. Create a new document in the new collection (with a new ID)
         const newCollectionName = type === 'income' ? 'incomes' : 'expenses';
-        const newDocRef = doc(firestore, `${basePath}/${newCollectionName}`, id);
+        const newCollRef = collection(firestore, `${basePath}/${newCollectionName}`);
+        const newDocRef = doc(newCollRef); // Firestore generates a new ID
         
         const { date, amount, userName, categoryId } = data;
-        const newDocData: Omit<Transaction, 'id' | 'type' | 'originalType'> = { date, amount, userName, userId: authUser.uid };
+        const newDocData: Omit<Transaction, 'id' | 'type' | 'originalType' | 'userId'> = { date, amount, userName };
+        
         if (type === 'expense') {
           newDocData.categoryId = categoryId;
         }
         
-        batch.set(newDocRef, newDocData);
+        batch.set(newDocRef, { ...newDocData, userId: authUser.uid });
         
         await batch.commit();
     }
