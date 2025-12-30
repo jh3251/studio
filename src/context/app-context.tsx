@@ -29,7 +29,7 @@ interface AppContextType {
   setCurrency: (currency: string) => Promise<void>;
   setAddress: (address: string) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' >) => Promise<void>;
-  updateTransaction: (transaction: Omit<Transaction, 'userId'>) => Promise<void>;
+  updateTransaction: (transaction: Omit<Transaction, 'userId'> & { originalType?: TransactionType }) => Promise<void>;
   deleteTransaction: (transactionId: string, type: TransactionType) => Promise<void>;
   clearAllTransactions: () => Promise<void>;
   addCategory: (category: Omit<Category, 'id' | 'userId' | 'position'>) => Promise<void>;
@@ -129,9 +129,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       if (type === 'expense') {
         updateData.categoryId = data.categoryId;
-      } else {
-        // Ensure categoryId is not part of an income update
-        delete updateData.categoryId;
       }
 
       await updateDocumentNonBlocking(docRef, updateData);
@@ -144,16 +141,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const oldDocRef = doc(firestore, `${basePath}/${oldCollectionName}`, id);
         batch.delete(oldDocRef);
 
-        // 2. Create a new document in the new collection (with a new ID)
+        // 2. Create a new document in the new collection
         const newCollectionName = type === 'income' ? 'incomes' : 'expenses';
-        const newCollRef = collection(firestore, `${basePath}/${newCollectionName}`);
-        const newDocRef = doc(newCollRef); // Firestore generates a new ID
+        const newDocRef = doc(collection(firestore, `${basePath}/${newCollectionName}`));
         
-        const { date, amount, userName, categoryId } = data;
-        const newDocData: Omit<Transaction, 'id' | 'type' | 'originalType' | 'userId'> = { date, amount, userName };
+        const newDocData: Omit<Transaction, 'id' | 'userId' | 'type'> = {
+          userName: data.userName,
+          amount: data.amount,
+          date: data.date,
+        };
         
         if (type === 'expense') {
-          newDocData.categoryId = categoryId;
+          newDocData.categoryId = data.categoryId;
         }
         
         batch.set(newDocRef, { ...newDocData, userId: authUser.uid });
