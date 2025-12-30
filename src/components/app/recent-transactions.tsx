@@ -145,11 +145,32 @@ export function RecentTransactions() {
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(0, 0, pageWidth, 35, 'F');
     
-    // Sumbook Logo
-    const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="white" /><path d="M15 8.5A2.5 2.5 0 0 0 12.5 6h-3A2.5 2.5 0 0 0 7 8.5v0A2.5 2.5 0 0 0 9.5 11h5A2.5 2.5 0 0 1 17 13.5v0A2.5 2.5 0 0 1 14.5 16h-3a2.5 2.5 0 0 1-2.5-2.5" stroke="rgb(${primaryColor.join(',')})" stroke-width="2.5" fill="none" /></svg>`;
-    const logoBase64 = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
-    doc.addImage(logoBase64, 'SVG', 14, 10, 15, 15);
-
+    // Sumbook Logo (drawn manually)
+    doc.setFillColor(whiteColor[0], whiteColor[1], whiteColor[2]);
+    doc.circle(21.5, 17.5, 7.5, 'F'); // White circle background
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setLineWidth(1.2);
+    doc.path([
+      { x: 23.5, y: 15.75, type: 'm' },
+      { x: 23.5, y: 15.75, c1x: 22.25, c1y: 15, c2x: 22.25, c2y: 15, type: 'c' },
+      { x: 21.25, y: 15, type: 'l' },
+      { x: 19.75, y: 15, type: 'l' },
+      { x: 19.75, y: 15, c1x: 18.5, c1y: 15, c2x: 18.5, c2y: 15, type: 'c' },
+      { x: 18.5, y: 16.25, type: 'l' },
+      { x: 18.5, y: 16.25, type: 'l' },
+      { x: 18.5, y: 16.25, c1x: 18.5, c1y: 17.5, c2x: 18.5, c2y: 17.5, type: 'c' },
+      { x: 19.75, y: 17.5, type: 'l' },
+      { x: 22.25, y: 17.5, type: 'l' },
+      { x: 22.25, y: 17.5, c1x: 23.5, c1y: 17.5, c2x: 23.5, c2y: 17.5, type: 'c' },
+      { x: 24.5, y: 18.75, type: 'l' },
+      { x: 24.5, y: 18.75, type: 'l' },
+      { x: 24.5, y: 18.75, c1x: 24.5, c1y: 20, c2x: 24.5, c2y: 20, type: 'c' },
+      { x: 23.25, y: 20, type: 'l' },
+      { x: 21.75, y: 20, type: 'l' },
+      { x: 21.75, y: 20, c1x: 20.5, c1y: 20, c2x: 20.5, c2y: 20, type: 'c' },
+      { x: 20.5, y: 18.75, type: 'l' },
+    ]).stroke();
+    
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(whiteColor[0], whiteColor[1], whiteColor[2]);
@@ -420,5 +441,3 @@ export function RecentTransactions() {
     </>
   );
 }
-
-    
