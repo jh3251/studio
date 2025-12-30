@@ -12,14 +12,14 @@ export function SumbookIcon(props: SVGProps<SVGSVGElement>) {
       strokeLinejoin="round"
       {...props}
     >
-      {/* The outer circle, filled with the current text color (which will be white when bg is primary) */}
-      <circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" />
+      {/* The blue rounded square, filled with primary color */}
+      <rect x="2" y="2" width="20" height="20" rx="4" fill="hsl(var(--primary))" stroke="none" />
       
-      {/* The S-symbol, stroked with the primary theme color. It will be visible against the white circle background. */}
-      <path
-        d="M15 8.5A2.5 2.5 0 0 0 12.5 6h-3A2.5 2.5 0 0 0 7 8.5v0A2.5 2.5 0 0 0 9.5 11h5A2.5 2.5 0 0 1 17 13.5v0A2.5 2.5 0 0 1 14.5 16h-3a2.5 2.5 0 0 1-2.5-2.5"
-        stroke="hsl(var(--primary))"
-        strokeWidth="2.5"
+      {/* The dollar sign symbol, stroked with white. */}
+      <path 
+        d="M12 2v2M12 20v2M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" 
+        stroke="white" 
+        strokeWidth="2.5" 
       />
     </svg>
   );
