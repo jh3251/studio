@@ -145,7 +145,7 @@ export function RecentTransactions() {
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.text('Financial Report', 14, 18);
+    doc.text('SumBook Financial Report', 14, 18);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
@@ -154,12 +154,10 @@ export function RecentTransactions() {
     finalY = 45; // Start content below header
 
     const formatCurrencyForPDF = (amount: number) => {
-        if (currency === 'BDT') {
-            return `৳${amount.toLocaleString('en-US')}`;
-        }
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: currency,
+            currencyDisplay: 'symbol'
         }).format(amount);
     };
     
@@ -413,6 +411,8 @@ export function RecentTransactions() {
     </>
   );
 }
+
+    
 
     
 
