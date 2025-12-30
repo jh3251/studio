@@ -147,30 +147,26 @@ export function RecentTransactions() {
     
     // Sumbook Logo (drawn manually)
     doc.setFillColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.setDrawColor(whiteColor[0], whiteColor[1], whiteColor[2]);
-    doc.setLineWidth(1.5);
-    // Bounding box for logo (white filled on primary background)
     doc.roundedRect(14, 10, 15, 15, 2, 2, 'F');
     
     doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    // Dollar sign
-    doc.path([
-        {op: 'm', x: 21.5, y: 12.5},
-        {op: 'l', x: 21.5, y: 22.5},
-    ]).stroke();
-    doc.path([
-        {op: 'm', x: 24, y: 15},
-        {op: 'c', x1: 24, y1: 14, x2: 23, y2: 14, x: 22.5, y: 14},
-        {op: 'l', x: 20, y: 14},
-        {op: 'c', x1: 19, y1: 14, x2: 19, y2: 15, x: 19, y: 15.5},
-        {op: 'l', x: 19, y: 17.5},
-        {op: 'c', x1: 19, y1: 18.5, x2: 20, y2: 18.5, x: 20.5, y: 18.5},
-        {op: 'l', x: 23, y: 18.5},
-        {op: 'c', x1: 24, y1: 18.5, x2: 24, y2: 19.5, x: 24, y: 20},
-        {op: 'l', x: 24, y: 21.5},
-        {op: 'c', x1: 24, y1: 22.5, x2: 23, y2: 22.5, x: 22.5, y: 22.5},
-        {op: 'l', x: 20, y: 22.5},
-    ]).stroke();
+    doc.setLineWidth(1.5);
+    // Dollar sign vertical bar
+    doc.line(21.5, 12.5, 21.5, 22.5); 
+    // Dollar sign S-curve
+    doc.lines([
+        [24, 15],
+        [22.5, 14],
+        [20, 14],
+        [19, 15.5],
+        [19, 17.5],
+        [20.5, 18.5],
+        [23, 18.5],
+        [24, 20],
+        [24, 21.5],
+        [22.5, 22.5],
+        [20, 22.5]
+    ], 0,0);
     
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
