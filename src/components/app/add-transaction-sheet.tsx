@@ -75,7 +75,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         date: formatDateForInput(transactionToEdit.date),
         categoryId: transactionToEdit.categoryId || '',
       } : {
-        userName: users[0]?.name || '',
+        userName: '',
         amount: undefined,
         type: 'expense' as const,
         date: formatDateForInput(new Date()),
