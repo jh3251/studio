@@ -42,14 +42,16 @@ export default function LoginPage() {
     } catch (error) {
         const authError = error as AuthError;
         let title = 'Authentication Failed';
-        let description = authError.message || 'An unexpected error occurred.';
+        let description = 'An unexpected error occurred. Please try again.';
 
         if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
             title = 'Sign-in Failed';
             description = 'Incorrect email or password. Please try again.';
+        } else {
+            console.error('Error during sign-in:', authError);
+            description = authError.message;
         }
         
-        console.error('Error during sign-in:', authError);
         toast({
             variant: "destructive",
             title: title,
