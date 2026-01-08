@@ -8,9 +8,9 @@ import { useAppContext } from '@/context/app-context';
 
 export function NewTransactionButton() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { users } = useAppContext();
+  const { users, activeStore } = useAppContext();
   
-  const canAddTransaction = users.length > 0;
+  const canAddTransaction = users.length > 0 && !!activeStore;
 
   return (
     <>

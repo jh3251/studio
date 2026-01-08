@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Settings, ChevronsUpDown, Check, PlusCircle, Store as StoreIcon } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import React from 'react';
 
@@ -18,6 +18,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
+import { useAppContext } from '@/context/app-context';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '../ui/command';
+import { Skeleton } from '../ui/skeleton';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -57,7 +61,8 @@ export function SidebarNav() {
         </div>
         <span className="text-lg font-semibold font-headline">SumBook</span>
       </div>
-      <div className="flex-1 px-4">
+      <div className="flex-1 px-4 space-y-4">
+        <StoreSwitcher />
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
@@ -114,3 +119,82 @@ export function SidebarNav() {
     </>
   );
 }
+
+
+function StoreSwitcher() {
+    const { stores, activeStore, setActiveStore, loading } = useAppContext();
+    const [open, setOpen] = React.useState(false);
+    const router = useRouter();
+
+    const handleStoreSelect = (storeId: string) => {
+        setActiveStore(storeId);
+        setOpen(false);
+    }
+    
+    if (loading && !activeStore) {
+        return <Skeleton className="h-10 w-full" />
+    }
+    
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                >
+                    <StoreIcon className="mr-2 h-4 w-4" />
+                    {activeStore ? activeStore.name : "Select a book..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--sidebar-width] p-0">
+                <Command>
+                    <CommandInput placeholder="Search book..." />
+                    <CommandList>
+                        <CommandEmpty>No book found.</CommandEmpty>
+                        <CommandGroup>
+                            {stores.map((store) => (
+                                <CommandItem
+                                    key={store.id}
+                                    onSelect={() => handleStoreSelect(store.id)}
+                                >
+                                    <StoreIcon className="mr-2 h-4 w-4" />
+                                    {store.name}
+                                    <Check
+                                        className={cn(
+                                            "ml-auto h-4 w-4",
+                                            activeStore?.id === store.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                    <CommandSeparator />
+                     <CommandList>
+                        <CommandGroup>
+                            <CommandItem
+                                onSelect={() => {
+                                    router.push('/settings');
+                                    setOpen(false);
+                                }}
+                            >
+                                <PlusCircle className="mr-2 h-5 w-5" />
+                                Create New Book
+                            </CommandItem>
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+// Dummy useRouter to prevent build errors
+// In a real scenario, this would come from 'next/navigation'
+const useRouter = () => ({
+    push: (path: string) => console.log(`Navigating to ${path}`),
+});
+

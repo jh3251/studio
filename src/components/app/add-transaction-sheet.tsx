@@ -99,7 +99,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     try {
       const dateAsISOString = new Date(data.date).toISOString();
       
-      const transactionData: Omit<Transaction, 'id' | 'userId' > = {
+      const transactionData: Omit<Transaction, 'id' | 'userId' | 'storeId'> = {
         userName: data.userName,
         amount: data.amount,
         type: data.type,

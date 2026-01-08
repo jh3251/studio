@@ -9,9 +9,10 @@
         "id": { "type": "string" },
         "userId": { "type": "string", "description": "The UID of the main authenticated user who owns the store." },
         "storeId": { "type": "string", "description": "The ID of the store this person belongs to." },
-        "name": { "type": "string", "description": "Display name of the person." }
+        "name": { "type": "string", "description": "Display name of the person." },
+        "position": { "type": "number", "description": "The order of the user in the list." }
       },
-      "required": ["id", "userId", "storeId", "name"]
+      "required": ["id", "userId", "storeId", "name", "position"]
     },
     "Expense": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -54,9 +55,10 @@
         "userId": { "type": "string", "description": "Owner's UID." },
         "storeId": { "type": "string", "description": "The ID of the store this category belongs to." },
         "name": { "type": "string" },
-        "icon": { "type": "string" }
+        "icon": { "type": "string" },
+        "position": { "type": "number", "description": "The order of the category in the list." }
       },
-      "required": ["id", "userId", "storeId", "name", "icon"]
+      "required": ["id", "userId", "storeId", "name", "icon", "position"]
     },
     "Store": {
       "$schema": "http://json-schema.org/draft-07/schema#",
