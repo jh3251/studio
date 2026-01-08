@@ -335,7 +335,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authUser, firestore, activeStoreId, addStore, setActiveStore]);
+  }, [authUser, firestore, activeStoreId]);
 
   // Effect for fetching store-specific data
   useEffect(() => {
@@ -378,7 +378,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     setLoading(false);
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [activeStoreId, authUser, firestore, addUser]);
+  }, [activeStoreId, authUser, firestore]);
 
 
   // Effect to merge transactions when local streams update
