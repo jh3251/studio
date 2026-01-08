@@ -325,7 +325,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setActiveStoreId(null);
         }
         
-        if (fetchedStores.length === 0) {
+        if (snapshot.docs.length === 0 && !snapshot.metadata.fromCache) {
            addStore({ name: 'Personal' }).then(newStoreId => {
              if (newStoreId) {
                 setActiveStore(newStoreId);
@@ -335,7 +335,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authUser, firestore, addStore, setActiveStore]);
+  }, [authUser, firestore, activeStoreId, addStore, setActiveStore]);
 
   // Effect for fetching store-specific data
   useEffect(() => {
@@ -368,15 +368,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const usersQuery = query(collection(firestore, `${storePath}/app_users`), orderBy('position'));
     unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
-      setUsers(snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[]);
+      const fetchedUsers = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as AppUser[];
+      setUsers(fetchedUsers);
+      
+      if (fetchedUsers.length === 0 && authUser.displayName && !snapshot.metadata.fromCache) {
+          addUser({ name: authUser.displayName });
+      }
     }));
     
-    getDocs(usersQuery).then(userSnapshot => {
-        if (userSnapshot.empty && authUser.displayName) {
-            addUser({ name: authUser.displayName });
-        }
-    });
-
     setLoading(false);
     return () => unsubscribes.forEach(unsub => unsub());
   }, [activeStoreId, authUser, firestore, addUser]);
