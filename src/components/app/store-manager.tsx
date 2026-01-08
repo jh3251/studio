@@ -25,22 +25,12 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '../ui/skeleton';
 import { Store } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Label } from '../ui/label';
 
 
 const storeSchema = z.object({
@@ -52,18 +42,42 @@ type StoreFormValues = z.infer<typeof storeSchema>;
 export function StoreManager() {
   const { stores, addStore, updateStore, deleteStore, loading, activeStore, setActiveStore } = useAppContext();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [storeToDelete, setStoreToDelete] = useState<Store | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const form = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
   });
 
-  const handleDialogOpen = (store: Store | null) => {
+  const handleFormDialogOpen = (store: Store | null) => {
     setEditingStore(store);
     form.reset(store ? { name: store.name } : { name: '' });
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
+  
+  const handleDeleteDialogOpen = (store: Store) => {
+    if (stores.length <= 1) {
+        toast({
+            variant: "destructive",
+            title: "Cannot Delete Last Book",
+            description: "You must have at least one book.",
+        });
+        return;
+    }
+    setStoreToDelete(store);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteDialogClose = () => {
+    setStoreToDelete(null);
+    setDeletePassword('');
+    setIsDeleteDialogOpen(false);
+  }
 
   const onSubmit = async (data: StoreFormValues) => {
     try {
@@ -77,7 +91,7 @@ export function StoreManager() {
         }
         toast({ title: 'Book Added', description: `Book "${data.name}" has been added.` });
       }
-      setIsDialogOpen(false);
+      setIsFormDialogOpen(false);
       setEditingStore(null);
     } catch (error) {
        toast({
@@ -88,24 +102,30 @@ export function StoreManager() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (stores.length <= 1) {
+  const handleDelete = async () => {
+    if (deletePassword !== '12345') {
         toast({
             variant: "destructive",
-            title: "Cannot Delete Last Book",
-            description: "You must have at least one book.",
+            title: "Incorrect Password",
+            description: "The password you entered is incorrect. Book not deleted.",
         });
         return;
     }
+    if (!storeToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await deleteStore(id);
+      await deleteStore(storeToDelete.id);
       toast({ title: 'Book Deleted', variant: 'destructive' });
+      handleDeleteDialogClose();
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
         description: "Could not delete book.",
       });
+    } finally {
+        setIsDeleting(false);
     }
   };
 
@@ -133,7 +153,7 @@ export function StoreManager() {
                 <CardTitle>Your Books</CardTitle>
                 <CardDescription>Manage the financial books for your account.</CardDescription>
             </div>
-            <Button onClick={() => handleDialogOpen(null)}>
+            <Button onClick={() => handleFormDialogOpen(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Book
             </Button>
         </div>
@@ -152,28 +172,12 @@ export function StoreManager() {
                     <StoreIcon className="h-6 w-6 text-muted-foreground" />
                     <span className="flex-1 font-medium">{store.name}</span>
                     <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDialogOpen(store)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFormDialogOpen(store)}>
                         <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={stores.length <= 1}>
-                            <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the book and all associated data (transactions, users, categories).
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(store.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                        </AlertDialog>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={stores.length <= 1} onClick={() => handleDeleteDialogOpen(store)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                     </div>
                     </li>
                 ))}
@@ -186,7 +190,7 @@ export function StoreManager() {
         )}
       </CardContent>
        {/* Add/Edit Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{editingStore ? 'Edit' : 'Add'} Book</DialogTitle>
@@ -220,6 +224,36 @@ export function StoreManager() {
                         </DialogFooter>
                     </form>
                 </Form>
+            </DialogContent>
+        </Dialog>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={handleDeleteDialogClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Are you absolutely sure?</DialogTitle>
+                    <DialogDescription>
+                        This action cannot be undone. This will permanently delete the book <span className="font-bold">{`"${storeToDelete?.name}"`}</span> and all associated data. To confirm, please enter the password '12345'.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="space-y-4 py-2 pb-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="delete-password">Password</Label>
+                        <Input 
+                            id="delete-password" 
+                            type="password"
+                            placeholder="Enter password to confirm"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={handleDeleteDialogClose}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete Book
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </Card>
