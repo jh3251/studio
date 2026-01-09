@@ -68,6 +68,10 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         return;
       }
 
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+
       const defaultValues = isEditMode && transactionToEdit ? {
         userName: transactionToEdit.userName || '',
         amount: transactionToEdit.amount || undefined,
@@ -85,6 +89,12 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
     }
   }, [isOpen, transactionToEdit, isEditMode, users, form, toast, onOpenChange, loading]);
 
+
+  const showNotification = (title: string, body: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  };
 
   const onSubmit = async (data: TransactionFormValues) => {
     if (data.type === 'expense' && !data.categoryId) {
@@ -119,17 +129,16 @@ export function AddTransactionSheet({ isOpen, onOpenChange, transactionToEdit }:
         });
         toast({
           title: 'Transaction updated',
-          description: `Transaction updated successfully. The page will refresh shortly.`,
+          description: `Transaction updated successfully.`,
         });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        showNotification('Transaction Updated', 'Your transaction has been successfully updated.');
       } else {
         await addTransaction(transactionData);
         toast({
           title: 'Transaction added',
           description: `A new transaction has been added.`,
         });
+        showNotification('Transaction Added', 'A new transaction has been successfully recorded.');
       }
       onOpenChange(false);
     } catch (error) {

@@ -111,6 +111,9 @@ export function RecentTransactions() {
   const handleSheetOpenChange = (isOpen: boolean) => {
     setIsSheetOpen(isOpen);
     if (!isOpen) {
+      if (editingTransaction) {
+        window.location.reload();
+      }
       setEditingTransaction(null);
     }
   };
