@@ -1,4 +1,5 @@
 import { AccountSettings } from '@/components/app/account-settings';
+import { DataManagement } from '@/components/app/data-management';
 import { StoreManager } from '@/components/app/store-manager';
 
 export default function SettingsPage() {
@@ -12,6 +13,7 @@ export default function SettingsPage() {
       </div>
       <div className="space-y-8">
         <StoreManager />
+        <DataManagement />
         <AccountSettings />
       </div>
     </div>
