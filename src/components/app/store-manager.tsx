@@ -191,8 +191,11 @@ export function StoreManager() {
               amount: parseFloat(row.amount),
               type: row.type as 'income' | 'expense',
               date: new Date(row.date).toISOString(),
-              categoryId: row.type === 'expense' ? category?.id : undefined,
             };
+
+            if (transaction.type === 'expense' && category) {
+              transaction.categoryId = category.id;
+            }
             
             await addTransactionToStore(store.id, transaction);
             newTransactionsAdded++;
