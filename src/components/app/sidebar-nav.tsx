@@ -210,20 +210,6 @@ function StoreSwitcherContent({ onStoreSelect }: { onStoreSelect: (storeId: stri
                     ))}
                 </CommandGroup>
             </CommandList>
-            <CommandSeparator />
-                <CommandList>
-                <CommandGroup>
-                    <CommandItem
-                        onSelect={() => {
-                            router.push('/settings');
-                            onStoreSelect(activeStore?.id || '');
-                        }}
-                    >
-                        <PlusCircle className="mr-2 h-5 w-5" />
-                        Create New Book
-                    </CommandItem>
-                </CommandGroup>
-            </CommandList>
         </Command>
     );
 }
