@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, writeBatch, getDocs, query, orderBy, getDoc } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
 
 import type { Transaction, Category, User as AppUser, TransactionType, UserPreferences, Store } from '@/lib/types';
@@ -32,9 +32,11 @@ interface AppContextType {
   setCurrency: (currency: string) => Promise<void>;
   setAddress: (address: string) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => Promise<void>;
+  addTransactionToStore: (storeId: string, transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => Promise<void>;
   updateTransaction: (transaction: Omit<Transaction, 'userId'| 'storeId'> & { originalType?: TransactionType }) => Promise<void>;
   deleteTransaction: (transactionId: string, type: TransactionType) => Promise<void>;
   clearAllTransactions: () => Promise<void>;
+  getTransactionsForStore: (storeId: string) => Promise<Transaction[]>;
   addCategory: (category: Omit<Category, 'id' | 'userId' | 'storeId' | 'position'>) => Promise<void>;
   updateCategory: (category: Pick<Category, 'id'> & Partial<Omit<Category, 'id' | 'userId' | 'storeId'>>) => Promise<void>;
   updateCategoryOrder: (categories: Category[]) => Promise<void>;
@@ -119,13 +121,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setAddressState(newAddress);
   }, [basePath, firestore]);
 
-  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => {
-    if (!basePath || !authUser || !activeStoreId) return;
+  const addTransactionToStore = useCallback(async (storeId: string, transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => {
+    if (!basePath || !authUser) return;
     const { type, ...data } = transaction;
     const collectionName = type === 'income' ? 'incomes' : 'expenses';
-    const coll = collection(firestore, `${basePath}/stores/${activeStoreId}/${collectionName}`);
-    await addDocumentNonBlocking(coll, { ...data, userId: authUser.uid, storeId: activeStoreId });
-  }, [basePath, firestore, authUser, activeStoreId]);
+    const coll = collection(firestore, `${basePath}/stores/${storeId}/${collectionName}`);
+    await addDocumentNonBlocking(coll, { ...data, userId: authUser.uid, storeId });
+  }, [basePath, firestore, authUser]);
+
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'userId' | 'storeId'>) => {
+    if (!activeStoreId) return;
+    await addTransactionToStore(activeStoreId, transaction);
+  }, [activeStoreId, addTransactionToStore]);
 
   const updateTransaction = useCallback(async (transaction: Omit<Transaction, 'userId' | 'storeId'> & { originalType?: TransactionType }) => {
     if (!basePath || !firestore || !authUser || !activeStoreId) return;
@@ -196,6 +203,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     await batch.commit();
   }, [basePath, firestore, activeStoreId]);
   
+  const getTransactionsForStore = useCallback(async (storeId: string): Promise<Transaction[]> => {
+    if (!basePath || !firestore) return [];
+    const storePath = `${basePath}/stores/${storeId}`;
+    const incomesRef = collection(firestore, `${storePath}/incomes`);
+    const expensesRef = collection(firestore, `${storePath}/expenses`);
+    
+    const [incomesSnap, expensesSnap] = await Promise.all([getDocs(incomesRef), getDocs(expensesRef)]);
+
+    const incomes = incomesSnap.docs.map(d => ({ ...d.data(), id: d.id, type: 'income' })) as Transaction[];
+    const expenses = expensesSnap.docs.map(d => ({ ...d.data(), id: d.id, type: 'expense' })) as Transaction[];
+
+    return [...incomes, ...expenses];
+  }, [basePath, firestore]);
+  
   const addCategory = useCallback(async (category: Omit<Category, 'id' | 'userId' | 'storeId' | 'position'>) => {
     if (!basePath || !authUser || !activeStoreId) return;
     const coll = collection(firestore, `${basePath}/stores/${activeStoreId}/categories`);
@@ -260,8 +281,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!basePath || !authUser || !firestore) return;
     const coll = collection(firestore, `${basePath}/stores`);
     const newDocRef = await addDocumentNonBlocking(coll, { ...store, userId: authUser.uid });
+    if (newDocRef?.id) {
+      await setActiveStore(newDocRef.id);
+    }
     return newDocRef?.id;
-  }, [basePath, firestore, authUser]);
+  }, [basePath, firestore, authUser, setActiveStore]);
 
   const updateStore = useCallback(async (storeId: string, data: Partial<Omit<Store, 'id' | 'userId'>>) => {
     if (!basePath || !firestore) return;
@@ -295,47 +319,50 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribes: (() => void)[] = [];
 
     const userPrefsRef = doc(firestore, `${userPath}/preferences/user`);
-    unsubscribes.push(onSnapshot(userPrefsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const prefs = snapshot.data() as UserPreferences;
-        setCurrencyState(prefs.currency || 'USD');
-        setAddressState(prefs.address || '');
-        if (prefs.activeStoreId) {
-          setActiveStoreId(prefs.activeStoreId);
+    const fetchAndSetActiveStore = async () => {
+        const prefsSnap = await getDoc(userPrefsRef);
+        if (prefsSnap.exists()) {
+            const prefs = prefsSnap.data() as UserPreferences;
+            setCurrencyState(prefs.currency || 'USD');
+            setAddressState(prefs.address || '');
+            if (prefs.activeStoreId) {
+                setActiveStoreId(prefs.activeStoreId);
+            }
+        } else {
+            // No prefs, set defaults
+            await setDocumentNonBlocking(userPrefsRef, { currency: 'USD', address: '' }, { merge: true });
         }
-      } else {
-        setDocumentNonBlocking(userPrefsRef, { currency: 'USD', address: '' }, { merge: true });
-      }
-    }));
-    
+    };
+    fetchAndSetActiveStore();
+
     const storesQuery = query(collection(firestore, `${userPath}/stores`));
-    unsubscribes.push(onSnapshot(storesQuery, (snapshot) => {
+    unsubscribes.push(onSnapshot(storesQuery, async (snapshot) => {
         const fetchedStores = snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Store[];
         setStores(fetchedStores);
 
-        const currentActiveId = activeStoreId;
+        const prefsSnap = await getDoc(userPrefsRef);
+        const currentActiveId = prefsSnap.exists() ? (prefsSnap.data() as UserPreferences).activeStoreId : null;
+        
         const activeStoreExists = fetchedStores.some(s => s.id === currentActiveId);
 
         if (!activeStoreExists && fetchedStores.length > 0) {
             const newActiveId = fetchedStores[0].id;
+            await setDocumentNonBlocking(userPrefsRef, { activeStoreId: newActiveId }, { merge: true });
             setActiveStoreId(newActiveId);
-            const userPrefsRef = doc(firestore, `${userPath}/preferences/user`);
-            setDocumentNonBlocking(userPrefsRef, { activeStoreId: newActiveId }, { merge: true });
-        } else if (fetchedStores.length === 0) {
+        } else if (fetchedStores.length === 0 && !snapshot.metadata.fromCache) {
             setActiveStoreId(null);
-        }
-        
-        if (snapshot.docs.length === 0 && !snapshot.metadata.fromCache) {
-           addStore({ name: 'Personal' }).then(newStoreId => {
-             if (newStoreId) {
-                setActiveStore(newStoreId);
-             }
-           });
+            const newStoreName = 'Personal';
+            const coll = collection(firestore, `${basePath}/stores`);
+            const newDocRef = await addDocumentNonBlocking(coll, { name: newStoreName, userId: authUser.uid });
+            if(newDocRef?.id) {
+               await setDocumentNonBlocking(userPrefsRef, { activeStoreId: newDocRef.id }, { merge: true });
+               setActiveStoreId(newDocRef.id);
+            }
         }
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authUser, firestore, activeStoreId]);
+  }, [authUser, firestore, basePath]);
 
   // Effect for fetching store-specific data
   useEffect(() => {
@@ -372,13 +399,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setUsers(fetchedUsers);
       
       if (fetchedUsers.length === 0 && authUser.displayName && !snapshot.metadata.fromCache) {
-          addUser({ name: authUser.displayName });
+          const coll = collection(firestore, `${basePath}/stores/${activeStoreId}/app_users`);
+          addDocumentNonBlocking(coll, { name: authUser.displayName, userId: authUser.uid, storeId: activeStoreId, position: 0 });
       }
     }));
     
     setLoading(false);
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [activeStoreId, authUser, firestore]);
+  }, [activeStoreId, authUser, firestore, basePath]);
 
 
   // Effect to merge transactions when local streams update
@@ -399,9 +427,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setCurrency,
     setAddress,
     addTransaction,
+    addTransactionToStore,
     updateTransaction,
     deleteTransaction,
     clearAllTransactions,
+    getTransactionsForStore,
     addCategory,
     updateCategory,
     updateCategoryOrder,
@@ -428,9 +458,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setCurrency,
     setAddress,
     addTransaction,
+    addTransactionToStore,
     updateTransaction,
     deleteTransaction,
     clearAllTransactions,
+    getTransactionsForStore,
     addCategory,
     updateCategory,
     updateCategoryOrder,
