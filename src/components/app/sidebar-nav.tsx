@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Tag, LogOut, Loader2, Users, Settings, ChevronsUpDown, Check, PlusCircle, Store as StoreIcon } from 'lucide-react';
+import { LayoutDashboard, Tag, LogOut, Loader2, Users, Settings, ChevronsUpDown, Check, Store as StoreIcon } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import React from 'react';
 
@@ -20,8 +20,10 @@ import { Button } from '../ui/button';
 import { SumbookIcon } from '../icons/sumbook-icon';
 import { useAppContext } from '@/context/app-context';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '../ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Skeleton } from '../ui/skeleton';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle, DrawerDescription } from '../ui/drawer';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -125,6 +127,7 @@ function StoreSwitcher() {
     const { stores, activeStore, setActiveStore, loading } = useAppContext();
     const [open, setOpen] = React.useState(false);
     const router = useRouter();
+    const isMobile = useIsMobile();
 
     const handleStoreSelect = (storeId: string) => {
         setActiveStore(storeId);
@@ -133,6 +136,34 @@ function StoreSwitcher() {
     
     if (loading && !activeStore) {
         return <Skeleton className="h-10 w-full" />
+    }
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={setOpen}>
+                <DrawerTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between"
+                    >
+                        <StoreIcon className="mr-2 h-4 w-4" />
+                        {activeStore ? activeStore.name : "Select a book..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                    <DrawerHeader>
+                        <DrawerTitle>Select a Book</DrawerTitle>
+                        <DrawerDescription>Switch between your financial books.</DrawerDescription>
+                    </DrawerHeader>
+                    <div className="p-4 border-t">
+                        <StoreSwitcherContent onStoreSelect={handleStoreSelect} />
+                    </div>
+                </DrawerContent>
+            </Drawer>
+        );
     }
     
     return (
